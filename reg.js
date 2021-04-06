@@ -229,29 +229,21 @@ async function createNewListing(page, info) {
     await PuppUtils.click(page, '#add_variations_button')
 
     await page.waitForTimeout(500)
-    let element = await page.$x(`//*[@name="variation_property"]`)
-    await element[0].click()
+    let element = await page.$(`[name="variation_property"]`)
+    await element.click()
 
     await page.waitForTimeout(200)
+    await page.evaluate(() => {
+        $(`[name="variation_property"]`).get(0).size = 1000
+    })
 
-
-
-    await page.mouse.wheel({ deltaY: 200 })
+    
 
     element = await page.$(`[value="__custom"]`)
-    let box = await element.boundingBox()
-    console.log(box)
-    const x = box.x + (box.width / 2)
-    const y = box.y + (box.height / 2)
-    console.log(x,y)
-    await page.mouse.move(x, y)
-    await page.mouse.down()
-    await page.waitForTimeout(50)
-    await page.mouse.up()
-    await page.mouse.click(x, y)
+    await element.click()
 
 
-    await page.waitForTimeout(SLOW_MO)
+    // await page.waitForTimeout(SLOW_MO)
 
     await PuppUtils.typeText(page, '#undefined-input', "Size")
     await PuppUtils.click(page, '[name="add-custom"]')

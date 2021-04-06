@@ -28,3 +28,16 @@ const browser = await puppeteer.launch({ headless: false,  defaultViewport: null
 		console.error(err)
 	}
 }
+
+function temp() {
+	    // element = await page.$('[name="variation_property"]')
+		console.log(element)
+		let box = await element.boundingBox()
+		console.log(box)
+		const x = box.x + (box.width / 2)
+		const y = box.y + (box.height / 2) + 30
+		console.log(x,y)
+		await page.mouse.move(x, y)
+	
+		// await page.mouse.wheel({ deltaY: -200 })
+}
