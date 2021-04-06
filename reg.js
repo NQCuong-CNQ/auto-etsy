@@ -34,12 +34,9 @@ const MUG_VARIATION = {
 main()
 async function main() {
     try {
-        //console.log(fs.readFileSync('./input/storage.txt', 'utf-8'))
         storage = JSON.parse(fs.readFileSync('./input/storage.txt', 'utf-8'))
 
         const tsvObject = d3.tsvParse(fs.readFileSync('./input/infos.tsv', 'utf-8'))
-
-        // console.log(tsvObject)
 
         for (const temp in tsvObject) {
             if (temp == 'columns') {
@@ -48,7 +45,6 @@ async function main() {
 
             infos[Number(temp)] = tsvObject[temp]
         }
-
 
         let info = infos[0]
         console.log(info)
@@ -248,7 +244,7 @@ async function createNewListing(page, info) {
 
     await PuppUtils.typeText(page, "#price_retail-input", info.price)
     await PuppUtils.typeText(page, "#quantity_retail-input", "999")
-    await PuppUtils.typeText(page, "#SKU-input", nanoid(10).replaceAll('-', ''))
+    await PuppUtils.typeText(page, "#SKU-input", nanoid(10).replace(/-/g, ''))
     
     await PuppUtils.click(page, '#add_variations_button')
 
@@ -314,7 +310,6 @@ async function createNewListing(page, info) {
     await page.waitForTimeout(1000)
 
     let elements = await page.$$('#variations-table tbody tr')
-    // console.log(elements)
 
     let variationTypes = Object.keys(MUG_VARIATION)
     if (variationTypes.length == 1) {
@@ -326,8 +321,6 @@ async function createNewListing(page, info) {
         let variationOptions1 = Object.keys(MUG_VARIATION[variationType1])
         let variationOptions2 = Object.keys(MUG_VARIATION[variationType2])
 
-        console.log("variationOptions1", variationOptions1)
-
         for (let i = 0, l = variationOptions1.length; i < l; i++) {
             for (let j = 0, l2 = variationOptions2.length; j < l2; j++) {
                 let option1 = variationOptions1[i]
@@ -338,7 +331,6 @@ async function createNewListing(page, info) {
                     let rows = $(`#variations-unified-table tbody tr`)
                     for (let k = 0, l3 = rows.length; k < l3; k++) {
                         let row = rows.eq(k)
-                        console.log("option "+option1+ option2)
                         if (row.find('td.width-20:eq(0)').text().trim() == option1 && row.find('td.width-20:eq(1)').text().trim() == option2) {
                             return row
                         }
@@ -349,7 +341,7 @@ async function createNewListing(page, info) {
                     return parentRow.find('[name="sku-input"]').get(0)
                 }, parentRow)
 
-                await element.type(nanoid(10).replaceAll('-', ''))
+                await element.type(nanoid(10).replace(/-/g, ''))
 
                 element = await page.evaluateHandle((parentRow) => {
                     return parentRow.find('[name="price-input"]').get(0)
