@@ -5,12 +5,31 @@ const d3 = require('d3-dsv')
 const fs = require('fs')
 const PuppUtils = require('./lib/PuppUtils')
 const fetch = require('node-fetch')
+const {nanoid} = require('nanoid')
 
 const SLOW_MO = 300
 
 var storage
 var infos = []
 
+const MUG_VARIATION = {
+    "Size": {
+        '11oz': {
+            price: 13.95
+        },
+        '15oz': {
+            price: 16.95
+        }
+    },
+    "Color": {
+        'Black': {
+            price: 0
+        },
+        'White': {
+            price: 0
+        }
+    }
+}
 
 main()
 async function main() {
@@ -237,41 +256,122 @@ async function createNewListing(page, info) {
         $(`[name="variation_property"]`).get(0).size = 1000
     })
 
-    
-
     element = await page.$(`[value="__custom"]`)
     await element.click()
 
-
     // await page.waitForTimeout(SLOW_MO)
+    for (variationType in MUG_VARIATION) {
+        await page.waitForTimeout(500)
+        let element = await page.$(`[name="variation_property"]`)
+        await element.click()
 
-    await PuppUtils.typeText(page, '#undefined-input', "Size")
-    await PuppUtils.click(page, '[name="add-custom"]')
+        await page.waitForTimeout(200)
+        await page.evaluate(() => {
+            $(`[name="variation_property"]`).get(0).size = 1000
+        })
 
-    await page.evaluate(() => {
-        $('[name="price-control"]').prop("selected", "selected")
-    })
-    await page.waitForTimeout(SLOW_MO)
+        element = await page.$(`[value="__custom"]`)
+        await element.click()
 
-    await page.evaluate(() => {
-        $('[name="sku-control"]').prop("selected", "selected")
-    })
-    await page.waitForTimeout(SLOW_MO)
+        await PuppUtils.typeText(page, '[name="custom-property-input"]', variationType)
+        element = await page.evaluateHandle(() => {
+            return $(`[name="variation_property"]`).parent().parent().find('[name="add-custom"]')[0]
+        })
+        await element.click()
 
-    await PuppUtils.typeText(page, '#undefined-input', '11 oz')
-    await PuppUtils.click(page, '[name="add-custom"]')
-    await PuppUtils.typeText(page, '#undefined-input', '15 oz')
-    await PuppUtils.click(page, '[name="add-custom"]')
+        let flag = true
+        for (const option in MUG_VARIATION[variationType]) {
+            let parentBox = await page.evaluateHandle((variationType) => {
+                return $(`[data-property-id] .strong [data-test-id="unsanitize"]:contains(${variationType})`).parent().parent().parent().parent().get(0)
+            }, variationType)
+
+            if (flag) {
+                element = await parentBox.$('[name="price-control"]')
+                await element.click()
+                element = await parentBox.$('[name="sku-control"]')
+                await element.click()
+
+                flag = false
+            }
+
+            element = await parentBox.$('#undefined-input')
+            await element.type(option)
+            element = await parentBox.$('[name="add-custom"]')
+            await element.click()
+        }
+    }
+
+
+
     await PuppUtils.click(page, '#save')
 
-    await page.evaluate(() => {
-        $('#variations-table tbody tr').each(function (i) {
-            //await PuppUtils.typeText(page, '#variations-table tbody tr input', '15')
-        });
-    })
+    await page.waitForTimeout(1000)
+
+    let elements = await page.$$('#variations-table tbody tr')
+    // console.log(elements)
+
+    let variationTypes = Object.keys(MUG_VARIATION)
+    if (variationTypes.length == 1) {
+
+    } else if (variationTypes.length == 2) {
+        let variationType1 = Object.keys(MUG_VARIATION)[0]
+        let variationType2 = Object.keys(MUG_VARIATION)[1]
+
+        let variationOptions1 = Object.keys(MUG_VARIATION[variationType1])
+        let variationOptions2 = Object.keys(MUG_VARIATION[variationType2])
+
+        console.log("variationOptions1", variationOptions1)
+
+        for (let i = 0, l = variationOptions1.length; i < l; i++) {
+            for (let j = 0, l2 = variationOptions2.length; j < l2; j++) {
+                let option1 = variationOptions1[i]
+                let option2 = variationOptions2[j]
+                let price = String(MUG_VARIATION[variationType1][option1].price)
+
+                let parentRow = await page.evaluateHandle((option1, option2) => {
+                    let rows = $(`#variations-unified-table tbody tr`)
+                    for (let k = 0, l3 = rows.length; k < l3; k++) {
+                        let row = rows.eq(k)
+                        console.log("option "+option1+ option2)
+                        if (row.find('td.width-20:eq(0)').text().trim() == option1 && row.find('td.width-20:eq(1)').text().trim() == option2) {
+                            return row
+                        }
+                    }
+                }, option1, option2)
+
+                element = await page.evaluateHandle((parentRow) => {
+                    return parentRow.find('[name="sku-input"]').get(0)
+                }, parentRow)
+
+                await element.type(nanoid(10))
+
+                element = await page.evaluateHandle((parentRow) => {
+                    return parentRow.find('[name="price-input"]').get(0)
+                }, parentRow)
+
+                await element.type(price)
+            }
+        }
+    }
+
+
+    // await page.evaluate(() => {
+    //     let elements = $()
+    //     for (let i = 0, l = elements.length; i < l; i++) {
+    //         let element = elements.eq(i)
+    //         element.find('[name="sku-input"]').val(i)
+    //         element.find('[name="price-input"]').val(i)
+    //     }    
+    // })
+
+
     await page.waitForTimeout(SLOW_MO)
 }
 
 function saveInfos() {
     fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
 }
+
+// function randomSku() {
+//     return String(Math.floor(Math.random() * 90000 + 10000))
+// }
