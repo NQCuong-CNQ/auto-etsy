@@ -220,19 +220,42 @@ async function createNewListing(page, info) {
 
     await PuppUtils.typeText(page, "#title-input", info.title)
 
-    await page.evaluate(() => {
-        $('#who_made-input option[value="i_did"]').attr("selected", "selected")
-    })
-    await page.waitForTimeout(SLOW_MO)
 
-    await page.evaluate(() => {
-        $('#is_supply-input option[value="false"]').attr("selected", "selected")
-    })
     await page.waitForTimeout(SLOW_MO)
-
+    let element = await page.$('#who_made-input')
+    await element.click()
     await page.evaluate(() => {
-        $('#when_made-input option[value="made_to_order"]').attr("selected", "selected")
+        $(`#who_made-input`).get(0).size = 1000
     })
+    element = await page.$('#who_made-input option[value="i_did"]')
+    await element.click()
+
+
+    // await page.evaluate(() => {
+    //     $('#who_made-input option[value="i_did"]').attr("selected", "selected")
+    // })
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.$('#is_supply-input')
+    await element.click()
+    await page.evaluate(() => {
+        $(`#is_supply-input`).get(0).size = 1000
+    })
+    element = await page.$('#is_supply-input option[value="false"]')
+    await element.click()
+    // await page.evaluate(() => {
+    //     $('#is_supply-input option[value="false"]').attr("selected", "selected")
+    // })
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.$('#when_made-input')
+    await element.click()
+    await page.evaluate(() => {
+        $(`#when_made-input`).get(0).size = 1000
+    })
+    element = await page.$('#when_made-input option[value="made_to_order"]')
+    await element.click()
+    // await page.evaluate(() => {
+    //     $('#when_made-input option[value="made_to_order"]').attr("selected", "selected")
+    // })
     await page.waitForTimeout(SLOW_MO)
 
     await PuppUtils.typeText(page, "#taxonomy-search", info.category)
@@ -249,7 +272,7 @@ async function createNewListing(page, info) {
     await PuppUtils.click(page, '#add_variations_button')
 
     await page.waitForTimeout(500)
-    let element = await page.$(`[name="variation_property"]`)
+    element = await page.$(`[name="variation_property"]`)
     await element.click()
 
     await page.waitForTimeout(200)
@@ -303,10 +326,7 @@ async function createNewListing(page, info) {
 
     }
 
-
-
     await PuppUtils.click(page, '#save')
-
     await page.waitForTimeout(1000)
 
     let elements = await page.$$('#variations-table tbody tr')
@@ -385,8 +405,6 @@ async function createNewListing(page, info) {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Canada")`).find('.wt-grid__item-md-9 .wt-btn.wt-btn--transparent.wt-btn--icon')[0]
     })
 
-    // await page.waitForTimeout(1000)
-    // element = await page.$('.wt-pt-xs-4 .wt-btn.wt-btn--transparent.wt-btn--icon:nth-child(1)')
     await element.click()
     
     await page.evaluate(() => {
@@ -400,18 +418,10 @@ async function createNewListing(page, info) {
     await PuppUtils.typeText(page, '#item_height', '1')
     await PuppUtils.click(page, '.page-footer [data-save]')
 
-
-    // await page.evaluate(() => {
-    //     let elements = $()
-    //     for (let i = 0, l = elements.length; i < l; i++) {
-    //         let element = elements.eq(i)
-    //         element.find('[name="sku-input"]').val(i)
-    //         element.find('[name="price-input"]').val(i)
-    //     }    
-    // })
-
-
-    await page.waitForTimeout(SLOW_MO)
+    await page.waitForTimeout(4000)
+    if(await PuppUtils.jsIsSelectorExisted(page, '[data-region="listings-container"] a')){
+        await PuppUtils.click(page, '[data-subway-next="true"] ')
+    }
 }
 
 function saveInfos() {
