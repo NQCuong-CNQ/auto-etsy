@@ -46,44 +46,48 @@ async function main() {
             infos[Number(temp)] = tsvObject[temp]
         }
 
-        let info = infos[0]
-        console.log(info)
-
-        const browser = await puppeteer.launch({
-            headless: false, defaultViewport: null, slowMo: 50,
-            executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
-            userDataDir: `./CR/${info.mail.trim().toLowerCase()}`,
-            args: ['--no-sandbox', '--start-maximized']
-        })
-        const page = await browser.newPage()
-        await page.goto('https://mail.google.com/mail/u/0/#inbox')
-        // await page.goto('https://accounts.google.com/signin/v2/identifier?service=mail&passive=true&rm=false&continue=https%3A%2F%2Fmail.google.com%2Fmail%2F&ss=1&scc=1&ltmpl=default&ltmplcache=2&emr=1&osid=1&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
-
-        await page.waitForTimeout(2000)
-        if (page.url().includes('https://mail.google.com/mail/u/0/#inbox')) {
-            await loginEtsy(browser, page, info)
-        } else {
-            await loginGoogle(page, info)
-            await page.waitForTimeout(2000)
-            if (page.url().includes('https://mail.google.com/mail/u/0/#inbox')) {
-                await loginEtsy(browser, page, info)
-            }else if(page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
-                await confirmRecoveryOption(browser, page, info)
+        for(let i = 0; i < infos.length; i++) {
+            if(infos[i].status=="Suspended"){
+                return
+            }
+            else{
+                let info = infos[i]
+                console.log(info)
+                await startRegAccount(info)
             }
         }
-
-
-        return
-
-        await page.waitForSelector('#')
-        let element = ''
-
-        element = await page.$('.select-signin')
-
-
     } catch (err) {
         console.error(err)
     }
+}
+
+async function startRegAccount(info){
+    const browser = await puppeteer.launch({
+        headless: false, defaultViewport: null, slowMo: 50,
+        executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
+        userDataDir: `./CR/${info.mail.trim().toLowerCase()}`,
+        args: ['--no-sandbox', '--start-maximized']
+    })
+    const page = await browser.newPage()
+    await page.goto('https://mail.google.com/mail/u/0/#inbox')
+
+    await page.waitForTimeout(2000)
+    if (page.url().includes('https://mail.google.com/mail/u/0/#inbox')) {
+        await loginEtsy(browser, page, info)
+    } else {
+        await loginGoogle(page, info)
+        await page.waitForTimeout(2000)
+        if (page.url().includes('https://mail.google.com/mail/u/0/#inbox')) {
+            await loginEtsy(browser, page, info)
+        }else if(page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
+            await confirmRecoveryOption(browser, page, info)
+        }
+    }
+    return
+
+    // await page.waitForSelector('#')
+    // let element = ''
+    // element = await page.$('.select-signin')
 }
 
 async function loginGoogle(page, info) {
@@ -155,8 +159,16 @@ async function onNextStep(page, info) {
         await submitBussinessInfo(page, info)
         return
     }
+    await checkStatusAccount(page, info)
     await page.waitForTimeout(3000)
     await onNextStep(page, info)
+}
+
+async function checkStatusAccount(page, info){
+    if((await page.content()).includes('Your account is currently suspended')){
+        info.status = "Suspended"
+        fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(info), 'utf8')
+    }
 }
 
 async function submitShoppreferences(page, info) {
@@ -251,8 +263,8 @@ async function generateShopName(page, info) {
         // let jsonResponse = await response.json()
         // if (jsonResponse.hasOwnProperty("result_type")) {
             console.log('Available', shopName)
-            info.shopName = shopName
-            saveInfos()
+            info.nameShop = shopName
+            saveInfos(info)
             return Promise.resolve()
         } else {
             console.log('Not Available', shopName)
@@ -586,8 +598,8 @@ function getDateOfBirth(order, info){
     return dob[order]
 }
 
-function saveInfos() {
-    fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
+function saveInfos(info) {
+    fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(info), 'utf8')
 }
 
 function confirmRecoveryOption(browser, page, info){
