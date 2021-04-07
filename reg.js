@@ -53,7 +53,7 @@ async function main() {
             headless: false, defaultViewport: null, slowMo: 50,
             executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
             userDataDir: `./CR/${info.mail.trim().toLowerCase()}`,
-            args: ['--no-sandbox']
+            args: ['--no-sandbox', '--start-maximized']
         })
         const page = await browser.newPage()
         await page.goto('https://mail.google.com/mail/u/0/#inbox')
@@ -67,7 +67,8 @@ async function main() {
             await page.waitForTimeout(2000)
             if (page.url().includes('https://mail.google.com/mail/u/0/#inbox')) {
                 await loginEtsy(browser, page, info)
-
+            }else if(page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
+                await confirmRecoveryOption(browser, page, info)
             }
         }
 
@@ -124,82 +125,138 @@ async function loginEtsy(browser, page, info) {
 
     await PuppUtils.click(newPage, `[data-email="${info.mail}"]`)
 
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(6000)
+
+    if (await PuppUtils.isElementVisbile(page, '[aria-describedby="ge-tooltip-label-you-menu"]')) {
+        await registerShop(page, info)
+        return
+    }
 }
 
 async function registerShop(page, info) {
     await page.goto('https://www.etsy.com/sell?ref=hdr-sell&from_page=https%3A%2F%2Fwww.etsy.com%2F')
     await page.goto('https://www.etsy.com/your/shop/create?us_sell_create_value')
 
+    onNextStep(page, info)
+}
+
+async function onNextStep(page, info) {
     // Step 1
     if (await PuppUtils.isElementVisbile(page, '#address-country')) {
         await submitShoppreferences(page, info)  // Step 1
-        await page.waitForTimeout(2000)
-        await submitShopName(page, info)   // Step 2
+        // await page.waitForTimeout(3000)
     } else if (await PuppUtils.isElementVisbile(page, '#onboarding-shop-name-input')) {   // Step 2
         await submitShopName(page, info)
-        await page.waitForTimeout(2000)
+        // await page.waitForTimeout(3000)
     } else if (await PuppUtils.jsIsSelectorExisted(page, '[data-region="listings-container"] a')) {   // Step 3
-        createNewListing(page, info)
+        await createNewListing(page, info)
+        // await page.waitForTimeout(3000)
+    } else if (await PuppUtils.isElementVisbile(page, '[data-ui="business-or-individual"]')) {   // Step 3
+        await submitBussinessInfo(page, info)
+        return
     }
+    await page.waitForTimeout(3000)
+    await onNextStep(page, info)
 }
 
 async function submitShoppreferences(page, info) {
+    //Change language step 1
+    await PuppUtils.click(page, 'button[aria-controls="wt-locale-picker-overlay"]')
+    await page.waitForTimeout(1000)
+    element = await page.$('#locale-overlay-select-region_code')
+    await element.click()
+    await page.waitForTimeout(200)
     await page.evaluate(() => {
-        document.getElementById('#address-country').value = 79
+        $('#locale-overlay-select-region_code').get(0).size = 1000
     })
-    await page.waitForTimeout(SLOW_MO)
+    element = await page.$('#locale-overlay-select-region_code [value="CA"]')
+    await element.click()
+    //Change language step 2
+    await page.waitForTimeout(500)
+    element = await page.$('#locale-overlay-select-language_code')
+    await element.click()
+    await page.waitForTimeout(200)
     await page.evaluate(() => {
-        document.querySelector('.select select-custom').value = 'USD'
+        $('#locale-overlay-select-language_code').get(0).size = 1000
     })
+    element = await page.$('#locale-overlay-select-language_code [value="en-US"]')
+    await element.click()
+    //Change language step 3
+    await page.waitForTimeout(500)
+    element = await page.$('#locale-overlay-select-currency_code')
+    await element.click()
+    await page.waitForTimeout(200)
+    await page.evaluate(() => {
+        $('#locale-overlay-select-currency_code').get(0).size = 1000
+    })
+    element = await page.$('#locale-overlay-select-currency_code [value="USD"]')
+    await element.click()
+
+    await PuppUtils.click(page, '#locale-overlay-save')
+
+    await page.waitForTimeout(2500)
+
+    element = await page.$('#onboard-shop-currency')
+    await element.click()
+    await page.waitForTimeout(200)
+    await page.evaluate(() => {
+        $('#onboard-shop-currency').get(0).size = 1000
+    })
+    element = await page.$(`[value="USD"]`)
+    await element.click()
+
     await page.waitForTimeout(SLOW_MO)
     await page.evaluate(() => {
         $('[name="intention"]:eq(0)').click()
     })
 
-    await PuppUtils.click('button[data-subway-next="true"]')
+    await PuppUtils.click(page, 'button[data-subway-next="true"]')
     await page.waitForTimeout(1000)
 }
 
 async function submitShopName(page, info) {
     await page.waitForSelector('#onboarding-shop-name-input')
-    await PuppUtils.typeText(page, '#onboarding-shop-name-input', await generateShopName(info))
-    await PuppUtils.click(page, '[data-action="check-availability"]')
-    await PuppUtils.click('button[data-subway-next="true"]')
+    await generateShopName(page, info)
+    
+    await PuppUtils.click(page, 'button[data-subway-next="true"]')
 }
 
-async function generateShopName(info) {
+async function generateShopName(page, info) {
     try {
         let shopName = info.mail.split('@')[0] + Math.floor(Math.random() * 90 + 10)
+        await PuppUtils.typeText(page, '#onboarding-shop-name-input', shopName)
+        await PuppUtils.click(page, '[data-action="check-availability"]')
+        await page.waitForTimeout(1000)
+        if(await PuppUtils.isElementVisbile(page, '#available[style="display: block;"]')){
 
-        let response = await fetch(`https://www.etsy.com/api/v3/ajax/bespoke/member/shops/name/check?shop_name=${shopName}&is_vintage=false&is_handmade=false&category=&shop_id=28854522`, {
-            "headers": {
-                "accept": "*/*",
-                "accept-language": "en-US,en;q=0.9",
-                "sec-fetch-dest": "empty",
-                "sec-fetch-mode": "cors",
-                "sec-fetch-site": "same-origin",
-                "x-detected-locale": "USD|en-US|VN",
-                "x-page-guid": "eb6426a3630.cb03e0a706416eedcb2e.00",
-                "x-requested-with": "XMLHttpRequest",
-                "cookie": "uaid=sTVfV0i5hz0l3Q4iydjMIWgV69VjZACChKzuqTC6Wqk0MTNFyUqpoCqnwNQrOz6s2D87q9TDySjKK98lLMfNwjgnXamWAQA.; user_prefs=DPnPPXUuP-LwHGHbrqcz9fmW4YRjZACChKzuqTA6Wik02EVJJ680J0dHKTVPNzRYSUcpzA8qYgShcBGxDAA.; fve=1617595285.0; last_browse_page=https%3A%2F%2Fwww.etsy.com%2F; ua=531227642bc86f3b5fd7103a0c0b4fd6; _gcl_au=1.1.1691248584.1617595286; _ga=GA1.2.797361194.1617595286; _gid=GA1.2.578247052.1617595286; G_ENABLED_IDPS=google; G_AUTHUSER_H=0; session-key-www=471597983-1011811269410-45fe68289114e9d5f0b1c82230a656c92ffffd2e45d5151b17e3af61|1620187837; session-key-apex=471597983-1011811269410-13fdf22e58198b40baf02264fd78fde0abe79e8fb48893e1fdd3b075|1620187837; LD=1; bc-v1-1-1-_etsy_com=2%3A05d707340b9830e828078d75570a43785980d359%3A1617595837%3A1617595837%3Ad040efae7b142b79c7ea9e15adebe7f7d9b382e392de85b3649d6e2b6bb3af9ac42c1a89d72e2032; _pin_unauth=dWlkPU1qbGlZamN6WmpjdFkyWmtOeTAwTTJRMUxXSmtNell0T0dZeU1UWm1ZVEUzWVRCaA; _uetsid=97f4482095c311eb83b51565fd823fd6; _uetvid=97f44e2095c311ebadcc33437119bc6a; exp_hangover=9RxzWsWFgsnP6oP5MBgmUpHI9chjZACChKzuqRB6Unq1UnlqUnxiUUlmWmZyZmJOfE5iSWpecmV8oUm8kYGhpZKVUmZeak5memZSTqpSLQMA; et-v1-1-1-_etsy_com=2%3A2a05ae6c788fe15915581c85ce0f8e19b5c09c88%3A1617597031%3A1617597031%3A8a8636ff07c68946846f95451d9dcfcfe393ff794ad0e35f2df58c70fcd484ecdfd40dae1a088597"
-            },
-            "referrer": "https://www.etsy.com/your/shop/create?us_sell_create_value",
-            "referrerPolicy": "strict-origin-when-cross-origin",
-            "body": null,
-            "method": "GET",
-            "mode": "cors"
-        })
+        // let response = await fetch(`https://www.etsy.com/api/v3/ajax/bespoke/member/shops/name/check?shop_name=${shopName}&is_vintage=false&is_handmade=false&category=`, {
+        //     "headers": {
+        //         "accept": "*/*",
+        //         "accept-language": "en-US,en;q=0.9",
+        //         "sec-fetch-dest": "empty",
+        //         "sec-fetch-mode": "cors",
+        //         "sec-fetch-site": "same-origin",
+        //         "x-detected-locale": "USD|en-US|CA",
+        //         "x-page-guid": "eb6426a3630.cb03e0a706416eedcb2e.00",
+        //         "x-requested-with": "XMLHttpRequest",
+        //         "cookie": "uaid=sTVfV0i5hz0l3Q4iydjMIWgV69VjZACChKzuqTC6Wqk0MTNFyUqpoCqnwNQrOz6s2D87q9TDySjKK98lLMfNwjgnXamWAQA.; user_prefs=DPnPPXUuP-LwHGHbrqcz9fmW4YRjZACChKzuqTA6Wik02EVJJ680J0dHKTVPNzRYSUcpzA8qYgShcBGxDAA.; fve=1617595285.0; last_browse_page=https%3A%2F%2Fwww.etsy.com%2F; ua=531227642bc86f3b5fd7103a0c0b4fd6; _gcl_au=1.1.1691248584.1617595286; _ga=GA1.2.797361194.1617595286; _gid=GA1.2.578247052.1617595286; G_ENABLED_IDPS=google; G_AUTHUSER_H=0; session-key-www=471597983-1011811269410-45fe68289114e9d5f0b1c82230a656c92ffffd2e45d5151b17e3af61|1620187837; session-key-apex=471597983-1011811269410-13fdf22e58198b40baf02264fd78fde0abe79e8fb48893e1fdd3b075|1620187837; LD=1; bc-v1-1-1-_etsy_com=2%3A05d707340b9830e828078d75570a43785980d359%3A1617595837%3A1617595837%3Ad040efae7b142b79c7ea9e15adebe7f7d9b382e392de85b3649d6e2b6bb3af9ac42c1a89d72e2032; _pin_unauth=dWlkPU1qbGlZamN6WmpjdFkyWmtOeTAwTTJRMUxXSmtNell0T0dZeU1UWm1ZVEUzWVRCaA; _uetsid=97f4482095c311eb83b51565fd823fd6; _uetvid=97f44e2095c311ebadcc33437119bc6a; exp_hangover=9RxzWsWFgsnP6oP5MBgmUpHI9chjZACChKzuqRB6Unq1UnlqUnxiUUlmWmZyZmJOfE5iSWpecmV8oUm8kYGhpZKVUmZeak5memZSTqpSLQMA; et-v1-1-1-_etsy_com=2%3A2a05ae6c788fe15915581c85ce0f8e19b5c09c88%3A1617597031%3A1617597031%3A8a8636ff07c68946846f95451d9dcfcfe393ff794ad0e35f2df58c70fcd484ecdfd40dae1a088597"
+        //     },
+        //     "referrer": "https://www.etsy.com/your/shop/create?us_sell_create_value",
+        //     "referrerPolicy": "strict-origin-when-cross-origin",
+        //     "body": null,
+        //     "method": "GET",
+        //     "mode": "cors"
+        // })
 
-        let jsonResponse = await response.json()
-        if (jsonResponse.result_type) {
+        // let jsonResponse = await response.json()
+        // if (jsonResponse.hasOwnProperty("result_type")) {
             console.log('Available', shopName)
             info.shopName = shopName
             saveInfos()
-            return Promise.resolve(shopName)
+            return Promise.resolve()
         } else {
             console.log('Not Available', shopName)
-            return Promise.resolve(await generateShopName(info))
+            generateShopName(page, info)
         }
     } catch (err) {
         return Promise.reject(err)
@@ -230,10 +287,6 @@ async function createNewListing(page, info) {
     element = await page.$('#who_made-input option[value="i_did"]')
     await element.click()
 
-
-    // await page.evaluate(() => {
-    //     $('#who_made-input option[value="i_did"]').attr("selected", "selected")
-    // })
     await page.waitForTimeout(SLOW_MO)
     element = await page.$('#is_supply-input')
     await element.click()
@@ -242,9 +295,7 @@ async function createNewListing(page, info) {
     })
     element = await page.$('#is_supply-input option[value="false"]')
     await element.click()
-    // await page.evaluate(() => {
-    //     $('#is_supply-input option[value="false"]').attr("selected", "selected")
-    // })
+
     await page.waitForTimeout(SLOW_MO)
     element = await page.$('#when_made-input')
     await element.click()
@@ -253,13 +304,11 @@ async function createNewListing(page, info) {
     })
     element = await page.$('#when_made-input option[value="made_to_order"]')
     await element.click()
-    // await page.evaluate(() => {
-    //     $('#when_made-input option[value="made_to_order"]').attr("selected", "selected")
-    // })
+
     await page.waitForTimeout(SLOW_MO)
 
     await PuppUtils.typeText(page, "#taxonomy-search", info.category)
-    await page.waitForTimeout(500)
+    await page.waitForTimeout(1500)
     await page.keyboard.press('Enter')
     await PuppUtils.typeText(page, "#description-text-area-input", info.description)
     // await PuppUtils.typeText(page, "#tags", info.tags)
@@ -424,8 +473,125 @@ async function createNewListing(page, info) {
     }
 }
 
+async function submitBussinessInfo(page, info){
+    await page.evaluate(() => {
+        element = document.querySelector('#bank-country-id');
+        if ( element ) {
+            element.scrollTop = element.offsetHeight;
+            console.error(`Scrolled to selector}`)
+        } else {
+            console.error(`cannot find selector`)
+        }
+    })
+
+
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.$('#bank-country-id')
+    await element.click()
+    await page.evaluate(() => {
+        $(`#bank-country-id`).get(0).size = 1000
+    })
+    element = await page.$('#bank-country-id [value="209"]')
+    await element.click()
+    await page.waitForTimeout(SLOW_MO)
+    await PuppUtils.typeText(page, "#bank-name-on-account", info.firstName+" "+info.middleName+" "+info.lastName)
+    await PuppUtils.typeText(page, "#bank-routing-number", info.rountingNumber)
+    await PuppUtils.typeText(page, "#bank-account-number", info.accountNumber)
+
+    await page.evaluate(() => {
+        element = document.querySelector('#identity-country-id');
+        if ( element ) {
+            element.scrollTop = element.offsetHeight;
+            console.error(`Scrolled to selector}`)
+        } else {
+            console.error(`cannot find selector`)
+        }
+    })
+
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.$('#identity-country-id')
+    await element.click()
+    await page.evaluate(() => {
+        $(`#identity-country-id`).get(0).size = 1000
+    })
+    element = await page.$('#identity-country-id [value="79"]')
+    await element.click()
+    await page.waitForTimeout(SLOW_MO)
+    await PuppUtils.typeText(page, "#identity-first-name", info.firstName)
+    await PuppUtils.typeText(page, "#identity-last-name", info.lastName)
+    //dob month
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.$('#dob-container-month')
+    await element.click()
+    await page.evaluate(() => {
+        $(`#dob-container-month`).get(0).size = 1000
+    })
+    element = await page.$(`#dob-container-month [value="${getDateOfBirth(0, info)}"]`)
+    await element.click()
+    //dob date
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.$('#dob-container-day')
+    await element.click()
+    await page.evaluate(() => {
+        $(`#dob-container-day`).get(0).size = 1000
+    })
+    element = await page.$(`#dob-container-day [value="${getDateOfBirth(1, info)}"]`)
+    await element.click()
+    //dob year
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.$('#dob-container-year')
+    await element.click()
+    await page.evaluate(() => {
+        $(`#dob-container-year`).get(0).size = 1000
+    })
+    element = await page.$(`#dob-container-year [value="${getDateOfBirth(2, info)}"]`)
+    await element.click()
+    await page.waitForTimeout(SLOW_MO)
+
+    await PuppUtils.typeText(page, 'input[name="street_number"]', getAddress(0, info))
+    await PuppUtils.typeText(page, 'input[name="street_name"]', getAddress(1, info))
+    await PuppUtils.typeText(page, '.address-container input[name="city"]', info.city)
+    //dob state
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.$('.address-container [name="state"]')
+    await element.click()
+    await page.evaluate(() => {
+        $(`.address-container [name="state"]`).get(0).size = 1000
+    })
+    element = await page.$(`.address-container [name="state"] [value="${info.state}"]`)
+    await element.click()
+    await page.waitForTimeout(SLOW_MO)
+
+    await PuppUtils.typeText(page, '.address-container input[name="zip"]', info.zip)
+
+    await PuppUtils.typeText(page, '.address-container input[name="phone"]', info.phone)
+    await PuppUtils.click(page, 'button[data-ui="dc-submit"]')
+}
+
+function getAddress(order, info){
+    let address = info.address.trim().split(" ")
+    if(order == 0){
+        return address[order]
+    }else{
+        let streetName = "";
+        for(let i = 1; i < address.length; i++ ){
+            streetName += address[i] + " "
+        }
+        return streetName.trim()
+    }
+}
+
+function getDateOfBirth(order, info){
+    let dob = info.dob.trim().split("/")
+    return dob[order]
+}
+
 function saveInfos() {
     fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
+}
+
+function confirmRecoveryOption(browser, page, info){
+
 }
 
 // function randomSku() {
