@@ -11,6 +11,7 @@ const SLOW_MO = 300
 
 var storage
 var infos = []
+var iNum = 0;
 
 const MUG_VARIATION = {
     "Size": {
@@ -52,7 +53,9 @@ async function main() {
             }
             else{
                 let info = infos[i]
+                iNum = i;
                 console.log(info)
+                // console.log(iNum)
                 await startRegAccount(info)
             }
         }
@@ -106,7 +109,7 @@ async function loginGoogle(page, info) {
 }
 
 async function loginEtsy(browser, page, info) {
-
+    // console.log("loginEtsy"+iNum)
     await page.goto('https://www.etsy.com')
 
     if (await PuppUtils.isElementVisbile(page, '.select-signin')) {
@@ -138,6 +141,7 @@ async function loginEtsy(browser, page, info) {
 }
 
 async function registerShop(page, info) {
+    // console.log("registerShop"+iNum)
     await page.goto('https://www.etsy.com/sell?ref=hdr-sell&from_page=https%3A%2F%2Fwww.etsy.com%2F')
     await page.goto('https://www.etsy.com/your/shop/create?us_sell_create_value')
 
@@ -146,6 +150,7 @@ async function registerShop(page, info) {
 
 async function onNextStep(page, info) {
     // Step 1
+    // console.log("onNextStep"+iNum)
     if (await PuppUtils.isElementVisbile(page, '#address-country')) {
         await submitShoppreferences(page, info)  // Step 1
         // await page.waitForTimeout(3000)
@@ -159,16 +164,20 @@ async function onNextStep(page, info) {
         await submitBussinessInfo(page, info)
         return
     }
-    await checkStatusAccount(page, info)
+    if(await checkStatusAccount(page)){
+        return
+    }
     await page.waitForTimeout(3000)
     await onNextStep(page, info)
 }
 
-async function checkStatusAccount(page, info){
+async function checkStatusAccount(page){
     if((await page.content()).includes('Your account is currently suspended')){
-        info.status = "Suspended"
-        fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(info), 'utf8')
-    }
+        infos[iNum].status = "Suspended"
+        // console.log(infos[iNum])
+        // fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
+        return Promise.resolve(true)
+    }return Promise.resolve(false)
 }
 
 async function submitShoppreferences(page, info) {

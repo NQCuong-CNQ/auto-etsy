@@ -1,5 +1,9 @@
 const puppeteer = require('puppeteer');
+var robot = require("robotjs");
+// Speed up the mouse.
+robot.setMouseDelay(2);
 
+robot.moveMouse(100, 100);
 // main()
 // async function main() {
 // 	try {
