@@ -6,6 +6,8 @@ const fs = require('fs')
 const PuppUtils = require('./lib/PuppUtils')
 const fetch = require('node-fetch')
 const {nanoid} = require('nanoid')
+var robot = require("robotjs");
+robot.setMouseDelay(2);
 
 const SLOW_MO = 300
 

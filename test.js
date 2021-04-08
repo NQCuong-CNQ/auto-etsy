@@ -1,9 +1,22 @@
 const puppeteer = require('puppeteer');
 var robot = require("robotjs");
 // Speed up the mouse.
-robot.setMouseDelay(2);
+robot.setMouseDelay(1000)
 
-robot.moveMouse(100, 100);
+robot.moveMouse(471,1060);
+robot.mouseClick("left", false);
+robot.moveMouse(847, 378);
+robot.mouseClick("left", false);
+robot.moveMouse(939, 586);
+robot.mouseClick("left", false);
+robot.moveMouse(752, 693);
+robot.mouseClick("left", false);
+robot.moveMouse(1021, 20);
+robot.mouseClick("left", false);
+robot.moveMouse(688,163);
+robot.mouseToggle("down");
+robot.dragMouse(982, 655);
+robot.mouseToggle("up");
 // main()
 // async function main() {
 // 	try {
