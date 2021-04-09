@@ -1,22 +1,14 @@
-const puppeteer = require('puppeteer');
-var robot = require("robotjs");
-// Speed up the mouse.
-robot.setMouseDelay(1000)
+// const puppeteer = require('puppeteer');
+const { exec } = require('child_process');
+exec('adb.exe shell svc data enable', {cwd: './adb'}, (err, stdout, stderr) => {
+    if (err) {
+      console.error(err)
+    } else {
+     console.log(`stdout: ${stdout}`);
+     console.log(`stderr: ${stderr}`);
+    }
+  });
 
-robot.moveMouse(471,1060);
-robot.mouseClick("left", false);
-robot.moveMouse(847, 378);
-robot.mouseClick("left", false);
-robot.moveMouse(939, 586);
-robot.mouseClick("left", false);
-robot.moveMouse(752, 693);
-robot.mouseClick("left", false);
-robot.moveMouse(1021, 20);
-robot.mouseClick("left", false);
-robot.moveMouse(688,163);
-robot.mouseToggle("down");
-robot.dragMouse(982, 655);
-robot.mouseToggle("up");
 // main()
 // async function main() {
 // 	try {
