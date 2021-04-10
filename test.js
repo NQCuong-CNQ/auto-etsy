@@ -1,5 +1,26 @@
 // const puppeteer = require('puppeteer');
+const d3 = require('d3-dsv')
+const fs = require('fs')
 const { exec } = require('child_process');
+
+var ipHistory = []
+const tsvObject = d3.tsvParse(fs.readFileSync('./input/ipHistory.tsv', 'utf-8'))
+for (const temp in tsvObject) {
+    if (temp == 'columns') {
+        continue
+    }
+    ipHistory[Number(temp)] = tsvObject[temp]
+}
+
+
+exec('adb.exe shell svc wifi disable', {cwd: './adb'}, (err, stdout, stderr) => {
+    if (err) {
+      console.error(err)
+    } else {
+     console.log(`stdout: ${stdout}`);
+     console.log(`stderr: ${stderr}`);
+    }
+  });
 exec('adb.exe shell svc data enable', {cwd: './adb'}, (err, stdout, stderr) => {
     if (err) {
       console.error(err)
@@ -8,6 +29,51 @@ exec('adb.exe shell svc data enable', {cwd: './adb'}, (err, stdout, stderr) => {
      console.log(`stderr: ${stderr}`);
     }
   });
+
+var http = require('http');
+const { now } = require('lodash');
+
+http.get({'host': 'api.ipify.org', 'port': 80, 'path': '/'}, function(resp) {
+resp.on('data', function(ip) {
+    console.log("My public IP address is: " + ip);
+    checkIp(ip);
+});
+});
+
+
+function checkIp(ip){
+    for(let i = 0; i < ipHistory.length; i++) {
+        if(ipHistory[i].ip==ip){
+            recreateIp()
+            return
+        }
+    }
+    console.log("Done: " + ip);
+    var newIp = { 'ip,time': 'fddf,ddr' }
+    fs.appendFileSync('./input/ipHistory.tsv', d3.tsvFormat(newIp), 'utf8')
+}
+
+function recreateIp(){
+    exec('adb.exe shell svc data disable', {cwd: './adb'}, (err, stdout, stderr) => {
+        if (err) {
+          console.error(err)
+        } else {
+         console.log(`stdout: ${stdout}`);
+         console.log(`stderr: ${stderr}`);
+        }
+      });
+
+
+    exec('adb.exe shell svc data enable', {cwd: './adb'}, (err, stdout, stderr) => {
+        if (err) {
+          console.error(err)
+        } else {
+         console.log(`stdout: ${stdout}`);
+         console.log(`stderr: ${stderr}`);
+        }
+    });
+    checkIp(ip);
+}
 
 // main()
 // async function main() {

@@ -5,15 +5,14 @@ const d3 = require('d3-dsv')
 const fs = require('fs')
 const PuppUtils = require('./lib/PuppUtils')
 const fetch = require('node-fetch')
-const {nanoid} = require('nanoid')
-var robot = require("robotjs");
-robot.setMouseDelay(2);
+const { nanoid } = require('nanoid')
+const { exec } = require('child_process');
 
 const SLOW_MO = 300
 
 var storage
 var infos = []
-var iNum = 0;
+var iNumCurrentAccount = 0
 
 const MUG_VARIATION = {
     "Size": {
@@ -38,35 +37,120 @@ main()
 async function main() {
     try {
         storage = JSON.parse(fs.readFileSync('./input/storage.txt', 'utf-8'))
-
         const tsvObject = d3.tsvParse(fs.readFileSync('./input/infos.tsv', 'utf-8'))
 
         for (const temp in tsvObject) {
             if (temp == 'columns') {
                 continue
             }
-
             infos[Number(temp)] = tsvObject[temp]
         }
 
-        for(let i = 0; i < infos.length; i++) {
-            if(infos[i].status=="Suspended"){
-                return
-            }
-            else{
-                let info = infos[i]
-                iNum = i;
-                console.log(info)
-                // console.log(iNum)
-                await startRegAccount(info)
-            }
-        }
+        await checkAccountValid()
+
     } catch (err) {
         console.error(err)
     }
 }
 
-async function startRegAccount(info){
+async function checkAccountValid(){
+    if (iNumCurrentAccount <= infos.length) {
+        let info = infos[iNumCurrentAccount]
+        console.log(info)
+        if (infos[iNumCurrentAccount].status == "Suspended" || infos[iNumCurrentAccount].status == "Successful") {
+            console.log("This account is Passed")
+            iNumCurrentAccount++
+            checkAccountValid()
+            return
+        }
+        await changeIp(info)
+    }
+}
+
+function sleep(ms) {
+    return new Promise(
+        resolve => setTimeout(resolve, ms)
+    );
+}
+
+async function changeIp(info) {
+    console.log(`disable wifi`)
+    exec('adb.exe shell svc wifi disable', { cwd: './adb' }, (err, stdout, stderr) => {
+        if (err) {
+            console.error(err)
+        } else {
+        }
+    });
+    console.log(`disable data`)
+    exec('adb.exe shell svc data disable', { cwd: './adb' }, (err, stdout, stderr) => {
+        if (err) {
+            console.error(err)
+        } else {
+        }
+    });
+    await sleep(5000);
+    console.log(`enable data`)
+    exec('adb.exe shell svc data enable', { cwd: './adb' }, (err, stdout, stderr) => {
+        if (err) {
+            console.error(err)
+        } else {
+        }
+    });
+    await sleep(5000);
+
+    var http = require('http')
+    http.get({ 'host': 'api.ipify.org', 'port': 80, 'path': '/' }, function (resp) {
+        resp.on('data', async function (ip) {
+            console.log("My current IP address is: " + ip);
+            await checkIp(ip, info);
+        });
+    });
+}
+
+async function checkIp(ip, info) {
+    if (isIpExist(ip)) {
+        await recreateIp(ip)
+        return
+    }
+    console.log("Save IP address: " + ip);
+    infos[iNumCurrentAccount].ip = ip
+    fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
+    this.setTimeout(async function () {
+        await startRegAccount(info)
+    }, 5000);
+}
+
+function isIpExist(ip) {
+    for (let i = 0; i < infos.length; i++) {
+        if (infos[i].ip == ip) {
+            return true
+        }
+    }
+}
+
+async function recreateIp(ip) {
+    console.log(`disable data`)
+    exec('adb.exe shell svc data disable', { cwd: './adb' }, (err, stdout, stderr) => {
+        if (err) {
+            console.error(err)
+        } else {
+
+        }
+    });
+    await sleep(5000);
+    console.log(`enable data`)
+    exec('adb.exe shell svc data enable', { cwd: './adb' }, (err, stdout, stderr) => {
+        if (err) {
+            console.error(err)
+        } else {
+
+        }
+    });
+    await sleep(5000);
+    checkIp(ip);
+}
+
+async function startRegAccount(info) {
     const browser = await puppeteer.launch({
         headless: false, defaultViewport: null, slowMo: 50,
         executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -84,34 +168,23 @@ async function startRegAccount(info){
         await page.waitForTimeout(2000)
         if (page.url().includes('https://mail.google.com/mail/u/0/#inbox')) {
             await loginEtsy(browser, page, info)
-        }else if(page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
+        } else if (page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
             await confirmRecoveryOption(browser, page, info)
         }
     }
     return
-
-    // await page.waitForSelector('#')
-    // let element = ''
-    // element = await page.$('.select-signin')
 }
 
 async function loginGoogle(page, info) {
     await PuppUtils.typeText(page, '#identifierId', info.mail.trim().toLowerCase())
-    // await PuppUtils.setValue(page, '#identifierId', info.mail.trim().toLowerCase())
-
     await PuppUtils.waitNextUrl(page, '#identifierNext')
-
-    // await page.waitForTimeout(4000)
     await PuppUtils.jsWaitForSelector(page, '[name="password"]', 4000)
     await page.waitForTimeout(1000)
     await PuppUtils.typeText(page, '[name="password"]', info.password.trim())
-    // await PuppUtils.setValue(page, '[name="password"]', info.password.trim())
-
     await PuppUtils.waitNextUrl(page, '#passwordNext')
 }
 
 async function loginEtsy(browser, page, info) {
-    // console.log("loginEtsy"+iNum)
     await page.goto('https://www.etsy.com')
 
     if (await PuppUtils.isElementVisbile(page, '.select-signin')) {
@@ -124,10 +197,8 @@ async function loginEtsy(browser, page, info) {
 
     element = await page.$('.select-signin')
     await element.click()
-
     await page.waitForTimeout(2000)
     await PuppUtils.click(page, 'button[data-google-button="true"]')
-
 
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     const newPage = await newPagePromise
@@ -143,7 +214,6 @@ async function loginEtsy(browser, page, info) {
 }
 
 async function registerShop(page, info) {
-    // console.log("registerShop"+iNum)
     await page.goto('https://www.etsy.com/sell?ref=hdr-sell&from_page=https%3A%2F%2Fwww.etsy.com%2F')
     await page.goto('https://www.etsy.com/your/shop/create?us_sell_create_value')
 
@@ -151,35 +221,44 @@ async function registerShop(page, info) {
 }
 
 async function onNextStep(page, info) {
+    if (await checkStatusAccount(page)) {
+        console.log("Suspended")
+        return
+    }
     // Step 1
-    // console.log("onNextStep"+iNum)
     if (await PuppUtils.isElementVisbile(page, '#address-country')) {
         await submitShoppreferences(page, info)  // Step 1
-        // await page.waitForTimeout(3000)
     } else if (await PuppUtils.isElementVisbile(page, '#onboarding-shop-name-input')) {   // Step 2
         await submitShopName(page, info)
-        // await page.waitForTimeout(3000)
     } else if (await PuppUtils.jsIsSelectorExisted(page, '[data-region="listings-container"] a')) {   // Step 3
         await createNewListing(page, info)
-        // await page.waitForTimeout(3000)
     } else if (await PuppUtils.isElementVisbile(page, '[data-ui="business-or-individual"]')) {   // Step 3
         await submitBussinessInfo(page, info)
         return
+    } else if (false) {
+        iNumCurrentAccount++
+        if (iNumCurrentAccount < infos.length) {
+            let info = infos[iNumCurrentAccount]
+            console.log(info)
+            if (info.status == "Suspended") {
+                return
+            }
+            await changeIp(info)
+        }
+        console.log("done!")
     }
-    if(await checkStatusAccount(page)){
-        return
-    }
+
     await page.waitForTimeout(3000)
     await onNextStep(page, info)
 }
 
-async function checkStatusAccount(page){
-    if((await page.content()).includes('Your account is currently suspended')){
-        infos[iNum].status = "Suspended"
-        // console.log(infos[iNum])
-        // fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
-        return Promise.resolve(true)
-    }return Promise.resolve(false)
+async function checkStatusAccount(page) {
+    console.log("checking StatusAccount")
+    if ((await page.content()).includes('Your account is currently suspended')) {
+        infos[iNumCurrentAccount].status = "Suspended"
+        fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
+        return true
+    } return false
 }
 
 async function submitShoppreferences(page, info) {
@@ -240,42 +319,42 @@ async function submitShoppreferences(page, info) {
 async function submitShopName(page, info) {
     await page.waitForSelector('#onboarding-shop-name-input')
     await generateShopName(page, info)
-    
+
     await PuppUtils.click(page, 'button[data-subway-next="true"]')
 }
 
 async function generateShopName(page, info) {
     try {
-        let shopName = info.mail.split('@')[0] + Math.floor(Math.random() * 90 + 10)
+        let shopName = info.firstName + info.middleName + info.lastName + getDateOfBirth(0, info) + getDateOfBirth(1, info)
         await PuppUtils.typeText(page, '#onboarding-shop-name-input', shopName)
         await PuppUtils.click(page, '[data-action="check-availability"]')
         await page.waitForTimeout(1000)
-        if(await PuppUtils.isElementVisbile(page, '#available[style="display: block;"]')){
+        if (await PuppUtils.isElementVisbile(page, '#available[style="display: block;"]')) {
 
-        // let response = await fetch(`https://www.etsy.com/api/v3/ajax/bespoke/member/shops/name/check?shop_name=${shopName}&is_vintage=false&is_handmade=false&category=`, {
-        //     "headers": {
-        //         "accept": "*/*",
-        //         "accept-language": "en-US,en;q=0.9",
-        //         "sec-fetch-dest": "empty",
-        //         "sec-fetch-mode": "cors",
-        //         "sec-fetch-site": "same-origin",
-        //         "x-detected-locale": "USD|en-US|CA",
-        //         "x-page-guid": "eb6426a3630.cb03e0a706416eedcb2e.00",
-        //         "x-requested-with": "XMLHttpRequest",
-        //         "cookie": "uaid=sTVfV0i5hz0l3Q4iydjMIWgV69VjZACChKzuqTC6Wqk0MTNFyUqpoCqnwNQrOz6s2D87q9TDySjKK98lLMfNwjgnXamWAQA.; user_prefs=DPnPPXUuP-LwHGHbrqcz9fmW4YRjZACChKzuqTA6Wik02EVJJ680J0dHKTVPNzRYSUcpzA8qYgShcBGxDAA.; fve=1617595285.0; last_browse_page=https%3A%2F%2Fwww.etsy.com%2F; ua=531227642bc86f3b5fd7103a0c0b4fd6; _gcl_au=1.1.1691248584.1617595286; _ga=GA1.2.797361194.1617595286; _gid=GA1.2.578247052.1617595286; G_ENABLED_IDPS=google; G_AUTHUSER_H=0; session-key-www=471597983-1011811269410-45fe68289114e9d5f0b1c82230a656c92ffffd2e45d5151b17e3af61|1620187837; session-key-apex=471597983-1011811269410-13fdf22e58198b40baf02264fd78fde0abe79e8fb48893e1fdd3b075|1620187837; LD=1; bc-v1-1-1-_etsy_com=2%3A05d707340b9830e828078d75570a43785980d359%3A1617595837%3A1617595837%3Ad040efae7b142b79c7ea9e15adebe7f7d9b382e392de85b3649d6e2b6bb3af9ac42c1a89d72e2032; _pin_unauth=dWlkPU1qbGlZamN6WmpjdFkyWmtOeTAwTTJRMUxXSmtNell0T0dZeU1UWm1ZVEUzWVRCaA; _uetsid=97f4482095c311eb83b51565fd823fd6; _uetvid=97f44e2095c311ebadcc33437119bc6a; exp_hangover=9RxzWsWFgsnP6oP5MBgmUpHI9chjZACChKzuqRB6Unq1UnlqUnxiUUlmWmZyZmJOfE5iSWpecmV8oUm8kYGhpZKVUmZeak5memZSTqpSLQMA; et-v1-1-1-_etsy_com=2%3A2a05ae6c788fe15915581c85ce0f8e19b5c09c88%3A1617597031%3A1617597031%3A8a8636ff07c68946846f95451d9dcfcfe393ff794ad0e35f2df58c70fcd484ecdfd40dae1a088597"
-        //     },
-        //     "referrer": "https://www.etsy.com/your/shop/create?us_sell_create_value",
-        //     "referrerPolicy": "strict-origin-when-cross-origin",
-        //     "body": null,
-        //     "method": "GET",
-        //     "mode": "cors"
-        // })
+            // let response = await fetch(`https://www.etsy.com/api/v3/ajax/bespoke/member/shops/name/check?shop_name=${shopName}&is_vintage=false&is_handmade=false&category=`, {
+            //     "headers": {
+            //         "accept": "*/*",
+            //         "accept-language": "en-US,en;q=0.9",
+            //         "sec-fetch-dest": "empty",
+            //         "sec-fetch-mode": "cors",
+            //         "sec-fetch-site": "same-origin",
+            //         "x-detected-locale": "USD|en-US|CA",
+            //         "x-page-guid": "eb6426a3630.cb03e0a706416eedcb2e.00",
+            //         "x-requested-with": "XMLHttpRequest",
+            //         "cookie": "uaid=sTVfV0i5hz0l3Q4iydjMIWgV69VjZACChKzuqTC6Wqk0MTNFyUqpoCqnwNQrOz6s2D87q9TDySjKK98lLMfNwjgnXamWAQA.; user_prefs=DPnPPXUuP-LwHGHbrqcz9fmW4YRjZACChKzuqTA6Wik02EVJJ680J0dHKTVPNzRYSUcpzA8qYgShcBGxDAA.; fve=1617595285.0; last_browse_page=https%3A%2F%2Fwww.etsy.com%2F; ua=531227642bc86f3b5fd7103a0c0b4fd6; _gcl_au=1.1.1691248584.1617595286; _ga=GA1.2.797361194.1617595286; _gid=GA1.2.578247052.1617595286; G_ENABLED_IDPS=google; G_AUTHUSER_H=0; session-key-www=471597983-1011811269410-45fe68289114e9d5f0b1c82230a656c92ffffd2e45d5151b17e3af61|1620187837; session-key-apex=471597983-1011811269410-13fdf22e58198b40baf02264fd78fde0abe79e8fb48893e1fdd3b075|1620187837; LD=1; bc-v1-1-1-_etsy_com=2%3A05d707340b9830e828078d75570a43785980d359%3A1617595837%3A1617595837%3Ad040efae7b142b79c7ea9e15adebe7f7d9b382e392de85b3649d6e2b6bb3af9ac42c1a89d72e2032; _pin_unauth=dWlkPU1qbGlZamN6WmpjdFkyWmtOeTAwTTJRMUxXSmtNell0T0dZeU1UWm1ZVEUzWVRCaA; _uetsid=97f4482095c311eb83b51565fd823fd6; _uetvid=97f44e2095c311ebadcc33437119bc6a; exp_hangover=9RxzWsWFgsnP6oP5MBgmUpHI9chjZACChKzuqRB6Unq1UnlqUnxiUUlmWmZyZmJOfE5iSWpecmV8oUm8kYGhpZKVUmZeak5memZSTqpSLQMA; et-v1-1-1-_etsy_com=2%3A2a05ae6c788fe15915581c85ce0f8e19b5c09c88%3A1617597031%3A1617597031%3A8a8636ff07c68946846f95451d9dcfcfe393ff794ad0e35f2df58c70fcd484ecdfd40dae1a088597"
+            //     },
+            //     "referrer": "https://www.etsy.com/your/shop/create?us_sell_create_value",
+            //     "referrerPolicy": "strict-origin-when-cross-origin",
+            //     "body": null,
+            //     "method": "GET",
+            //     "mode": "cors"
+            // })
 
-        // let jsonResponse = await response.json()
-        // if (jsonResponse.hasOwnProperty("result_type")) {
+            // let jsonResponse = await response.json()
+            // if (jsonResponse.hasOwnProperty("result_type")) {
             console.log('Available', shopName)
-            info.nameShop = shopName
-            saveInfos(info)
+            infos[iNumCurrentAccount].nameShop = shopName
+            saveInfos()
             return Promise.resolve()
         } else {
             console.log('Not Available', shopName)
@@ -340,7 +419,7 @@ async function createNewListing(page, info) {
     await PuppUtils.typeText(page, "#price_retail-input", info.price)
     await PuppUtils.typeText(page, "#quantity_retail-input", "999")
     await PuppUtils.typeText(page, "#SKU-input", nanoid(10).replace(/-/g, ''))
-    
+
     await PuppUtils.click(page, '#add_variations_button')
 
     await page.waitForTimeout(500)
@@ -471,14 +550,14 @@ async function createNewListing(page, info) {
     })
     element = await page.$('#processing_time_select [value="4"]')
     await element.click()
-    
+
     await page.waitForTimeout(1000)
     element = await page.evaluateHandle(() => {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Canada")`).find('.wt-grid__item-md-9 .wt-btn.wt-btn--transparent.wt-btn--icon')[0]
     })
 
     await element.click()
-    
+
     await page.evaluate(() => {
         $('#processing_time_select option[value="3"]').attr("selected", "selected")
     })
@@ -491,15 +570,15 @@ async function createNewListing(page, info) {
     await PuppUtils.click(page, '.page-footer [data-save]')
 
     await page.waitForTimeout(4000)
-    if(await PuppUtils.jsIsSelectorExisted(page, '[data-region="listings-container"] a')){
+    if (await PuppUtils.jsIsSelectorExisted(page, '[data-region="listings-container"] a')) {
         await PuppUtils.click(page, '[data-subway-next="true"] ')
     }
 }
 
-async function submitBussinessInfo(page, info){
+async function submitBussinessInfo(page, info) {
     await page.evaluate(() => {
         element = document.querySelector('#bank-country-id');
-        if ( element ) {
+        if (element) {
             element.scrollTop = element.offsetHeight;
             console.error(`Scrolled to selector}`)
         } else {
@@ -517,13 +596,13 @@ async function submitBussinessInfo(page, info){
     element = await page.$('#bank-country-id [value="209"]')
     await element.click()
     await page.waitForTimeout(SLOW_MO)
-    await PuppUtils.typeText(page, "#bank-name-on-account", info.firstName+" "+info.middleName+" "+info.lastName)
+    await PuppUtils.typeText(page, "#bank-name-on-account", info.firstName + " " + info.middleName + " " + info.lastName)
     await PuppUtils.typeText(page, "#bank-routing-number", info.rountingNumber)
     await PuppUtils.typeText(page, "#bank-account-number", info.accountNumber)
 
     await page.evaluate(() => {
         element = document.querySelector('#identity-country-id');
-        if ( element ) {
+        if (element) {
             element.scrollTop = element.offsetHeight;
             console.error(`Scrolled to selector}`)
         } else {
@@ -549,7 +628,7 @@ async function submitBussinessInfo(page, info){
     await page.evaluate(() => {
         $(`#dob-container-month`).get(0).size = 1000
     })
-    element = await page.$(`#dob-container-month [value="${getDateOfBirth(0, info)}"]`)
+    element = await page.$(`#dob-container-month option[value="${getDateOfBirth(0, info)}"]`)
     await element.click()
     //dob date
     await page.waitForTimeout(SLOW_MO)
@@ -558,7 +637,7 @@ async function submitBussinessInfo(page, info){
     await page.evaluate(() => {
         $(`#dob-container-day`).get(0).size = 1000
     })
-    element = await page.$(`#dob-container-day [value="${getDateOfBirth(1, info)}"]`)
+    element = await page.$(`#dob-container-day option[value="${getDateOfBirth(1, info)}"]`)
     await element.click()
     //dob year
     await page.waitForTimeout(SLOW_MO)
@@ -567,7 +646,7 @@ async function submitBussinessInfo(page, info){
     await page.evaluate(() => {
         $(`#dob-container-year`).get(0).size = 1000
     })
-    element = await page.$(`#dob-container-year [value="${getDateOfBirth(2, info)}"]`)
+    element = await page.$(`#dob-container-year option[value="${getDateOfBirth(2, info)}"]`)
     await element.click()
     await page.waitForTimeout(SLOW_MO)
 
@@ -591,29 +670,29 @@ async function submitBussinessInfo(page, info){
     await PuppUtils.click(page, 'button[data-ui="dc-submit"]')
 }
 
-function getAddress(order, info){
+function getAddress(order, info) {
     let address = info.address.trim().split(" ")
-    if(order == 0){
+    if (order == 0) {
         return address[order]
-    }else{
+    } else {
         let streetName = "";
-        for(let i = 1; i < address.length; i++ ){
+        for (let i = 1; i < address.length; i++) {
             streetName += address[i] + " "
         }
         return streetName.trim()
     }
 }
 
-function getDateOfBirth(order, info){
+function getDateOfBirth(order, info) {
     let dob = info.dob.trim().split("/")
-    return dob[order]
+    return parseInt(dob[order])
 }
 
 function saveInfos(info) {
-    fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(info), 'utf8')
+    fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
 }
 
-function confirmRecoveryOption(browser, page, info){
+function confirmRecoveryOption(browser, page, info) {
 
 }
 
