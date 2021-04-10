@@ -88,7 +88,7 @@ async function changeIp(info) {
         } else {
         }
     });
-    await sleep(5000);
+    await sleep(3000);
     console.log(`enable data`)
     exec('adb.exe shell svc data enable', { cwd: './adb' }, (err, stdout, stderr) => {
         if (err) {
@@ -96,7 +96,7 @@ async function changeIp(info) {
         } else {
         }
     });
-    await sleep(5000);
+    await sleep(3000);
 
     var http = require('http')
     http.get({ 'host': 'api.ipify.org', 'port': 80, 'path': '/' }, function (resp) {
@@ -115,9 +115,9 @@ async function checkIp(ip, info) {
     console.log("Save IP address: " + ip);
     infos[iNumCurrentAccount].ip = ip
     fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
-    this.setTimeout(async function () {
-        await startRegAccount(info)
-    }, 5000);
+
+    await sleep(2000);
+    await startRegAccount(info)
 }
 
 function isIpExist(ip) {
@@ -134,19 +134,17 @@ async function recreateIp(ip) {
         if (err) {
             console.error(err)
         } else {
-
         }
     });
-    await sleep(5000);
+    await sleep(3000);
     console.log(`enable data`)
     exec('adb.exe shell svc data enable', { cwd: './adb' }, (err, stdout, stderr) => {
         if (err) {
             console.error(err)
         } else {
-
         }
     });
-    await sleep(5000);
+    await sleep(3000);
     checkIp(ip);
 }
 
@@ -223,6 +221,8 @@ async function registerShop(page, info) {
 async function onNextStep(page, info) {
     if (await checkStatusAccount(page)) {
         console.log("Suspended")
+        iNumCurrentAccount++
+        await checkAccountValid()
         return
     }
     // Step 1
@@ -237,15 +237,8 @@ async function onNextStep(page, info) {
         return
     } else if (false) {
         iNumCurrentAccount++
-        if (iNumCurrentAccount < infos.length) {
-            let info = infos[iNumCurrentAccount]
-            console.log(info)
-            if (info.status == "Suspended") {
-                return
-            }
-            await changeIp(info)
-        }
         console.log("done!")
+        await checkAccountValid()
     }
 
     await page.waitForTimeout(3000)
@@ -379,7 +372,6 @@ async function createNewListing(page, info) {
 
     await PuppUtils.typeText(page, "#title-input", info.title)
 
-
     await page.waitForTimeout(SLOW_MO)
     let element = await page.$('#who_made-input')
     await element.click()
@@ -413,20 +405,17 @@ async function createNewListing(page, info) {
     await page.waitForTimeout(1500)
     await page.keyboard.press('Enter')
     await PuppUtils.typeText(page, "#description-text-area-input", info.description)
-    // await PuppUtils.typeText(page, "#tags", info.tags)
-    // await PuppUtils.click(page, '[data-region="tags"] button')
-
     await PuppUtils.typeText(page, "#price_retail-input", info.price)
     await PuppUtils.typeText(page, "#quantity_retail-input", "999")
     await PuppUtils.typeText(page, "#SKU-input", nanoid(10).replace(/-/g, ''))
 
     await PuppUtils.click(page, '#add_variations_button')
 
-    await page.waitForTimeout(500)
+    await page.waitForTimeout(SLOW_MO)
     element = await page.$(`[name="variation_property"]`)
     await element.click()
 
-    await page.waitForTimeout(200)
+    await page.waitForTimeout(SLOW_MO)
     await page.evaluate(() => {
         $(`[name="variation_property"]`).get(0).size = 1000
     })
@@ -434,7 +423,7 @@ async function createNewListing(page, info) {
     element = await page.$(`[value="__custom"]`)
     await element.click()
 
-    // await page.waitForTimeout(SLOW_MO)
+    await page.waitForTimeout(SLOW_MO)
     for (variationType in MUG_VARIATION) {
         await page.waitForTimeout(500)
         let element = await page.$(`[name="variation_property"]`)
@@ -476,11 +465,8 @@ async function createNewListing(page, info) {
         }
 
     }
-
     await PuppUtils.click(page, '#save')
     await page.waitForTimeout(1000)
-
-    let elements = await page.$$('#variations-table tbody tr')
 
     let variationTypes = Object.keys(MUG_VARIATION)
     if (variationTypes.length == 1) {
@@ -695,7 +681,3 @@ function saveInfos(info) {
 function confirmRecoveryOption(browser, page, info) {
 
 }
-
-// function randomSku() {
-//     return String(Math.floor(Math.random() * 90000 + 10000))
-// }
