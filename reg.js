@@ -8,7 +8,7 @@ const fetch = require('node-fetch')
 const { nanoid } = require('nanoid')
 const { exec } = require('child_process');
 
-const SLOW_MO = 300
+const SLOW_MO = 1000
 
 var storage
 var infos = []
@@ -156,18 +156,25 @@ async function startRegAccount(info) {
         args: ['--no-sandbox', '--start-maximized']
     })
     const page = await browser.newPage()
-    await page.goto('https://mail.google.com/mail/u/0/#inbox')
+    await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
 
     await page.waitForTimeout(2000)
     if (page.url().includes('https://mail.google.com/mail/u/0/#inbox')) {
         await loginEtsy(browser, page, info)
     } else {
         await loginGoogle(page, info)
-        await page.waitForTimeout(2000)
+        await page.waitForTimeout(5000)
         if (page.url().includes('https://mail.google.com/mail/u/0/#inbox')) {
             await loginEtsy(browser, page, info)
         } else if (page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
             await confirmRecoveryOption(browser, page, info)
+        }
+        else{
+            await page.waitForTimeout(5000)
+            if (page.url().includes('https://mail.google.com/mail/u/0/#inbox')) {
+                await loginEtsy(browser, page, info)
+            }
+            return
         }
     }
     return
@@ -195,7 +202,7 @@ async function loginEtsy(browser, page, info) {
 
     element = await page.$('.select-signin')
     await element.click()
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(3000)
     await PuppUtils.click(page, 'button[data-google-button="true"]')
 
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
@@ -257,30 +264,30 @@ async function checkStatusAccount(page) {
 async function submitShoppreferences(page, info) {
     //Change language step 1
     await PuppUtils.click(page, 'button[aria-controls="wt-locale-picker-overlay"]')
-    await page.waitForTimeout(1000)
+    await page.waitForTimeout(SLOW_MO)
     element = await page.$('#locale-overlay-select-region_code')
     await element.click()
-    await page.waitForTimeout(200)
+    await page.waitForTimeout(SLOW_MO)
     await page.evaluate(() => {
         $('#locale-overlay-select-region_code').get(0).size = 1000
     })
     element = await page.$('#locale-overlay-select-region_code [value="CA"]')
     await element.click()
     //Change language step 2
-    await page.waitForTimeout(500)
+    await page.waitForTimeout(SLOW_MO)
     element = await page.$('#locale-overlay-select-language_code')
     await element.click()
-    await page.waitForTimeout(200)
+    await page.waitForTimeout(SLOW_MO)
     await page.evaluate(() => {
         $('#locale-overlay-select-language_code').get(0).size = 1000
     })
     element = await page.$('#locale-overlay-select-language_code [value="en-US"]')
     await element.click()
     //Change language step 3
-    await page.waitForTimeout(500)
+    await page.waitForTimeout(SLOW_MO)
     element = await page.$('#locale-overlay-select-currency_code')
     await element.click()
-    await page.waitForTimeout(200)
+    await page.waitForTimeout(SLOW_MO)
     await page.evaluate(() => {
         $('#locale-overlay-select-currency_code').get(0).size = 1000
     })
@@ -293,7 +300,7 @@ async function submitShoppreferences(page, info) {
 
     element = await page.$('#onboard-shop-currency')
     await element.click()
-    await page.waitForTimeout(200)
+    await page.waitForTimeout(SLOW_MO)
     await page.evaluate(() => {
         $('#onboard-shop-currency').get(0).size = 1000
     })
@@ -306,7 +313,7 @@ async function submitShoppreferences(page, info) {
     })
 
     await PuppUtils.click(page, 'button[data-subway-next="true"]')
-    await page.waitForTimeout(1000)
+    await page.waitForTimeout(SLOW_MO)
 }
 
 async function submitShopName(page, info) {
@@ -321,7 +328,7 @@ async function generateShopName(page, info) {
         let shopName = info.firstName + info.middleName + info.lastName + getDateOfBirth(0, info) + getDateOfBirth(1, info)
         await PuppUtils.typeText(page, '#onboarding-shop-name-input', shopName)
         await PuppUtils.click(page, '[data-action="check-availability"]')
-        await page.waitForTimeout(1000)
+        await page.waitForTimeout(SLOW_MO)
         if (await PuppUtils.isElementVisbile(page, '#available[style="display: block;"]')) {
 
             // let response = await fetch(`https://www.etsy.com/api/v3/ajax/bespoke/member/shops/name/check?shop_name=${shopName}&is_vintage=false&is_handmade=false&category=`, {
@@ -425,11 +432,11 @@ async function createNewListing(page, info) {
 
     await page.waitForTimeout(SLOW_MO)
     for (variationType in MUG_VARIATION) {
-        await page.waitForTimeout(500)
+        await page.waitForTimeout(SLOW_MO)
         let element = await page.$(`[name="variation_property"]`)
         await element.click()
 
-        await page.waitForTimeout(200)
+        await page.waitForTimeout(SLOW_MO)
         await page.evaluate(() => {
             $(`[name="variation_property"]`).get(0).size = 1000
         })
@@ -466,7 +473,7 @@ async function createNewListing(page, info) {
 
     }
     await PuppUtils.click(page, '#save')
-    await page.waitForTimeout(1000)
+    await page.waitForTimeout(SLOW_MO)
 
     let variationTypes = Object.keys(MUG_VARIATION)
     if (variationTypes.length == 1) {
@@ -537,7 +544,7 @@ async function createNewListing(page, info) {
     element = await page.$('#processing_time_select [value="4"]')
     await element.click()
 
-    await page.waitForTimeout(1000)
+    await page.waitForTimeout(SLOW_MO)
     element = await page.evaluateHandle(() => {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Canada")`).find('.wt-grid__item-md-9 .wt-btn.wt-btn--transparent.wt-btn--icon')[0]
     })
