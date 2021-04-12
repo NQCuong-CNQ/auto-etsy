@@ -39,29 +39,6 @@ async function main() {
         storage = JSON.parse(fs.readFileSync('./input/storage.txt', 'utf-8'))
         const tsvObject = d3.tsvParse(fs.readFileSync('./input/infos.tsv', 'utf-8'))
 
-        console.log(`AIRPLANE_MODE_SETTINGS`)
-        exec('adb.exe shell am start -a android.settings.AIRPLANE_MODE_SETTINGS;', { cwd: './adb' }, (err, stdout, stderr) => {
-            if (err) {
-                console.error(err)
-            } else {
-            }
-        });
-        await sleep(1000);
-        exec('adb.exe shell input keyevent 61;', { cwd: './adb' }, (err, stdout, stderr) => {
-            if (err) {
-                console.error(err)
-            } else {
-            }
-        });
-        await sleep(1000);
-        exec('adb.exe shell input keyevent 61;', { cwd: './adb' }, (err, stdout, stderr) => {
-            if (err) {
-                console.error(err)
-            } else {
-            }
-        });
-        await sleep(1000);
-
         for (const temp in tsvObject) {
             if (temp == 'columns') {
                 continue
@@ -95,22 +72,30 @@ function sleep(ms) {
 }
 
 async function changeIp(info) {
-    console.log(`toggle airplane mode`)
-    exec('adb.exe shell input keyevent 66;', { cwd: './adb' }, (err, stdout, stderr) => {
-        if (err) {
-            console.error(err)
-        } else {
-        }
-    });
-    await sleep(2000);
-    exec('adb.exe shell input keyevent 66;', { cwd: './adb' }, (err, stdout, stderr) => {
-        if (err) {
-            console.error(err)
-        } else {
-        }
-    });
-    await sleep(3000);
-
+    console.log("start toggle")
+    await toggleHome()
+    await toggleTetherSettings()
+    await toggleTab()
+    await toggleTab()
+    await toggleTab()
+    await toggleTab()
+    await toggleEnter()
+    await sleep(5000)
+    await toggleHome()
+    await toggleAPMSettings()
+    await toggleTab()
+    await toggleTab()
+    await toggleEnter()
+    await toggleHome()
+    await toggleAPMSettings()
+    await toggleTab()
+    await toggleTab()
+    await toggleEnter()
+    await toggleHome()
+    await toggleCheckAPM()
+    //thieu buoc bạt lại
+    console.log("Done!")
+    await sleep(2000)
     var http = require('http')
     http.get({ 'host': 'api.ipify.org', 'port': 80, 'path': '/' }, function (resp) {
         resp.on('data', async function (ip) {
@@ -118,6 +103,76 @@ async function changeIp(info) {
             await checkIp(ip, info);
         });
     });
+}
+async function toggleCheckAPM(){
+    console.log("toggleCheckAPM")
+    exec('adb.exe shell settings get global airplane_mode_on', { cwd: './adb' }, async function(err, stdout, stderr) {
+        console.log(stdout)
+
+        if (err) {
+            console.error(err)
+        } else {
+            if(stdout == 1){
+                console.log("Retry turn off airplane mode!")
+                await toggleHome()
+                await toggleAPMSettings()
+                await toggleTab()
+                await toggleTab()
+                await toggleEnter()
+                await toggleHome()
+            }else{
+                console.log("Success!")
+            }
+        }
+    })
+    await sleep(1000)
+}
+async function toggleHome(){
+    exec('adb.exe shell input keyevent 3', { cwd: './adb' }, (err, stdout, stderr) => {
+        if (err) {
+            console.error(err)
+        } else {
+        }
+    })
+    await sleep(1000)
+}
+async function toggleTetherSettings(){
+    exec('adb.exe shell am start -n com.android.settings/.TetherSettings', { cwd: './adb' }, (err, stdout, stderr) => {
+        if (err) {
+            console.error(err)
+        } else {
+        }
+    })
+    await sleep(1000)
+}
+async function toggleAPMSettings(){
+    exec('adb.exe shell am start -a android.settings.AIRPLANE_MODE_SETTINGS', { cwd: './adb' }, (err, stdout, stderr) => {
+        if (err) {
+            console.error(err)
+        } else {
+        }
+    })
+    await sleep(1000)
+}
+
+async function toggleEnter(){
+    exec('adb.exe shell input keyevent 66', { cwd: './adb' }, (err, stdout, stderr) => {
+        if (err) {
+            console.error(err)
+        } else {
+        }
+    })
+    await sleep(3000)
+}
+
+async function toggleTab(){
+    exec('adb.exe shell input keyevent 61', { cwd: './adb' }, (err, stdout, stderr) => {
+        if (err) {
+            console.error(err)
+        } else {
+        }
+    })
+    await sleep(1000)
 }
 
 async function checkIp(ip, info) {
