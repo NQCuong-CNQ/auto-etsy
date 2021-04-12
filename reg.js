@@ -45,9 +45,7 @@ async function main() {
             }
             infos[Number(temp)] = tsvObject[temp]
         }
-
         await checkAccountValid()
-
     } catch (err) {
         console.error(err)
     }
@@ -56,7 +54,7 @@ async function main() {
 async function checkAccountValid(){
     if (iNumCurrentAccount <= infos.length) {
         let info = infos[iNumCurrentAccount]
-        console.log(info)
+        console.log(info.mail)
         if (infos[iNumCurrentAccount].status == "Suspended" || infos[iNumCurrentAccount].status == "Successful") {
             console.log("This account is Passed")
             iNumCurrentAccount++
@@ -326,39 +324,16 @@ async function submitShopName(page, info) {
 
 async function generateShopName(page, info, reGen = false) {
     try {
-        let shopName = ""
+        let shopName = shopName = info.firstName + info.middleName + info.lastName + getDateOfBirth(0, info) + getDateOfBirth(1, info)
         if(reGen) {
-            shopName = info.firstName + info.middleName + info.lastName + getDateOfBirth(0, info) + getDateOfBirth(1, info) + nanoid(2)
+            shopName += nanoid(2)
         }
-        else{
-            shopName = info.firstName + info.middleName + info.lastName + getDateOfBirth(0, info) + getDateOfBirth(1, info)
-        }
+
         await PuppUtils.typeText(page, '#onboarding-shop-name-input', shopName)
         await PuppUtils.click(page, '[data-action="check-availability"]')
         await page.waitForTimeout(SLOW_MO)
+
         if (await PuppUtils.isElementVisbile(page, '#available[style="display: block;"]')) {
-
-            // let response = await fetch(`https://www.etsy.com/api/v3/ajax/bespoke/member/shops/name/check?shop_name=${shopName}&is_vintage=false&is_handmade=false&category=`, {
-            //     "headers": {
-            //         "accept": "*/*",
-            //         "accept-language": "en-US,en;q=0.9",
-            //         "sec-fetch-dest": "empty",
-            //         "sec-fetch-mode": "cors",
-            //         "sec-fetch-site": "same-origin",
-            //         "x-detected-locale": "USD|en-US|CA",
-            //         "x-page-guid": "eb6426a3630.cb03e0a706416eedcb2e.00",
-            //         "x-requested-with": "XMLHttpRequest",
-            //         "cookie": "uaid=sTVfV0i5hz0l3Q4iydjMIWgV69VjZACChKzuqTC6Wqk0MTNFyUqpoCqnwNQrOz6s2D87q9TDySjKK98lLMfNwjgnXamWAQA.; user_prefs=DPnPPXUuP-LwHGHbrqcz9fmW4YRjZACChKzuqTA6Wik02EVJJ680J0dHKTVPNzRYSUcpzA8qYgShcBGxDAA.; fve=1617595285.0; last_browse_page=https%3A%2F%2Fwww.etsy.com%2F; ua=531227642bc86f3b5fd7103a0c0b4fd6; _gcl_au=1.1.1691248584.1617595286; _ga=GA1.2.797361194.1617595286; _gid=GA1.2.578247052.1617595286; G_ENABLED_IDPS=google; G_AUTHUSER_H=0; session-key-www=471597983-1011811269410-45fe68289114e9d5f0b1c82230a656c92ffffd2e45d5151b17e3af61|1620187837; session-key-apex=471597983-1011811269410-13fdf22e58198b40baf02264fd78fde0abe79e8fb48893e1fdd3b075|1620187837; LD=1; bc-v1-1-1-_etsy_com=2%3A05d707340b9830e828078d75570a43785980d359%3A1617595837%3A1617595837%3Ad040efae7b142b79c7ea9e15adebe7f7d9b382e392de85b3649d6e2b6bb3af9ac42c1a89d72e2032; _pin_unauth=dWlkPU1qbGlZamN6WmpjdFkyWmtOeTAwTTJRMUxXSmtNell0T0dZeU1UWm1ZVEUzWVRCaA; _uetsid=97f4482095c311eb83b51565fd823fd6; _uetvid=97f44e2095c311ebadcc33437119bc6a; exp_hangover=9RxzWsWFgsnP6oP5MBgmUpHI9chjZACChKzuqRB6Unq1UnlqUnxiUUlmWmZyZmJOfE5iSWpecmV8oUm8kYGhpZKVUmZeak5memZSTqpSLQMA; et-v1-1-1-_etsy_com=2%3A2a05ae6c788fe15915581c85ce0f8e19b5c09c88%3A1617597031%3A1617597031%3A8a8636ff07c68946846f95451d9dcfcfe393ff794ad0e35f2df58c70fcd484ecdfd40dae1a088597"
-            //     },
-            //     "referrer": "https://www.etsy.com/your/shop/create?us_sell_create_value",
-            //     "referrerPolicy": "strict-origin-when-cross-origin",
-            //     "body": null,
-            //     "method": "GET",
-            //     "mode": "cors"
-            // })
-
-            // let jsonResponse = await response.json()
-            // if (jsonResponse.hasOwnProperty("result_type")) {
             console.log('Available', shopName)
             saveInfos()
             return Promise.resolve()
@@ -415,47 +390,45 @@ async function createNewListing(page, info) {
     await page.waitForTimeout(SLOW_MO)
 
     await PuppUtils.typeText(page, "#taxonomy-search", info.category)
-    await page.waitForTimeout(1500)
+    await page.waitForTimeout(200)
     await page.keyboard.press('Enter')
+
     await PuppUtils.typeText(page, "#description-text-area-input", info.description)
     await PuppUtils.typeText(page, "#price_retail-input", info.price)
     await PuppUtils.typeText(page, "#quantity_retail-input", "999")
     await PuppUtils.typeText(page, "#SKU-input", nanoid(10).replace(/-/g, ''))
-
     await PuppUtils.click(page, '#add_variations_button')
 
     await page.waitForTimeout(SLOW_MO)
     element = await page.$(`[name="variation_property"]`)
     await element.click()
-
     await page.waitForTimeout(SLOW_MO)
     await page.evaluate(() => {
         $(`[name="variation_property"]`).get(0).size = 1000
     })
-
     element = await page.$(`[value="__custom"]`)
     await element.click()
 
     await page.waitForTimeout(SLOW_MO)
     for (variationType in MUG_VARIATION) {
-        await page.waitForTimeout(SLOW_MO)
+        
         let element = await page.$(`[name="variation_property"]`)
         await element.click()
-
         await page.waitForTimeout(SLOW_MO)
         await page.evaluate(() => {
             $(`[name="variation_property"]`).get(0).size = 1000
         })
-
         element = await page.$(`[value="__custom"]`)
         await element.click()
 
+        await page.waitForTimeout(SLOW_MO)
         await PuppUtils.typeText(page, '[name="custom-property-input"]', variationType)
         element = await page.evaluateHandle(() => {
             return $(`[name="variation_property"]`).parent().parent().find('[name="add-custom"]')[0]
         })
         await element.click()
 
+        await page.waitForTimeout(SLOW_MO)
         let flag = true
         for (const option in MUG_VARIATION[variationType]) {
             let parentBox = await page.evaluateHandle((variationType) => {
@@ -538,7 +511,6 @@ async function createNewListing(page, info) {
     })
     element = await page.$('#shipping_country [value="209"]')
     await element.click()
-
     await PuppUtils.typeText(page, '#origin_postal_code', "10001")
 
     await page.waitForTimeout(SLOW_MO)
@@ -554,13 +526,9 @@ async function createNewListing(page, info) {
     element = await page.evaluateHandle(() => {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Canada")`).find('.wt-grid__item-md-9 .wt-btn.wt-btn--transparent.wt-btn--icon')[0]
     })
-
     await element.click()
 
-    await page.evaluate(() => {
-        $('#processing_time_select option[value="3"]').attr("selected", "selected")
-    })
-
+    await page.waitForTimeout(SLOW_MO)
     await PuppUtils.click(page, '[data-region="shipping-with-profile-management"] button')
     await PuppUtils.typeText(page, '#weight_primary', '1')
     await PuppUtils.typeText(page, '#item_length', '1')
@@ -595,6 +563,7 @@ async function submitBussinessInfo(page, info) {
     })
     element = await page.$('#bank-country-id [value="209"]')
     await element.click()
+
     await page.waitForTimeout(SLOW_MO)
     await PuppUtils.typeText(page, "#bank-name-on-account", info.firstName + " " + info.middleName + " " + info.lastName)
     await PuppUtils.typeText(page, "#bank-routing-number", info.rountingNumber)
@@ -618,6 +587,7 @@ async function submitBussinessInfo(page, info) {
     })
     element = await page.$('#identity-country-id [value="79"]')
     await element.click()
+    
     await page.waitForTimeout(SLOW_MO)
     await PuppUtils.typeText(page, "#identity-first-name", info.firstName)
     await PuppUtils.typeText(page, "#identity-last-name", info.lastName)
@@ -665,7 +635,6 @@ async function submitBussinessInfo(page, info) {
     await page.waitForTimeout(SLOW_MO)
 
     await PuppUtils.typeText(page, '.address-container input[name="zip"]', info.zip)
-
     await PuppUtils.typeText(page, '.address-container input[name="phone"]', info.phone)
     await PuppUtils.click(page, 'button[data-ui="dc-submit"]')
 }
