@@ -191,8 +191,8 @@ async function loginGoogle(page, info) {
 
 async function loginEtsy(browser, page, info) {
     await page.goto('https://www.etsy.com')
-    await page.waitForTimeout(5000)
-    if (await PuppUtils.jsWaitForSelector(page, '.select-signin', 5000)) {
+    await page.waitForTimeout(10000)
+    if (await PuppUtils.isElementVisbile(page, '.select-signin')) {
 
     } else {
         await registerShop(page, info)
@@ -325,7 +325,8 @@ async function submitShopName(page, info) {
 
 async function generateShopName(page, info, reGen = false) {
     try {
-        let shopName = shopName = info.firstName + info.middleName + info.lastName + getDateOfBirth(0, info) + getDateOfBirth(1, info)
+        let shopName = ""
+        shopName = info.firstName + info.lastName + getDateOfBirth(0, info) + getDateOfBirth(1, info)
         if(reGen) {
             shopName += nanoid(2)
         }
