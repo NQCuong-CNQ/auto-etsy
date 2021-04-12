@@ -39,6 +39,29 @@ async function main() {
         storage = JSON.parse(fs.readFileSync('./input/storage.txt', 'utf-8'))
         const tsvObject = d3.tsvParse(fs.readFileSync('./input/infos.tsv', 'utf-8'))
 
+        console.log(`AIRPLANE_MODE_SETTINGS`)
+        exec('adb.exe shell am start -a android.settings.AIRPLANE_MODE_SETTINGS;', { cwd: './adb' }, (err, stdout, stderr) => {
+            if (err) {
+                console.error(err)
+            } else {
+            }
+        });
+        await sleep(1000);
+        exec('adb.exe shell input keyevent 61;', { cwd: './adb' }, (err, stdout, stderr) => {
+            if (err) {
+                console.error(err)
+            } else {
+            }
+        });
+        await sleep(1000);
+        exec('adb.exe shell input keyevent 61;', { cwd: './adb' }, (err, stdout, stderr) => {
+            if (err) {
+                console.error(err)
+            } else {
+            }
+        });
+        await sleep(1000);
+
         for (const temp in tsvObject) {
             if (temp == 'columns') {
                 continue
@@ -72,22 +95,21 @@ function sleep(ms) {
 }
 
 async function changeIp(info) {
-    console.log(`AIRPLANE_MODE_SETTINGS`)
-    exec('adb.exe shell am start -a android.settings.AIRPLANE_MODE_SETTINGS', { cwd: './adb' }, (err, stdout, stderr) => {
-        if (err) {
-            console.error(err)
-        } else {
-        }
-    });
-    await sleep(SLOW_MO);
     console.log(`toggle airplane mode`)
-    exec('adb.exe shell input keyevent 23 ; sleep 1; ./adb.exe shell input keyevent 23; sleep 1; ./adb.exe shell input keyevent 3;', { cwd: './adb' }, (err, stdout, stderr) => {
+    exec('adb.exe shell input keyevent 66;', { cwd: './adb' }, (err, stdout, stderr) => {
         if (err) {
             console.error(err)
         } else {
         }
     });
-    await sleep(SLOW_MO);
+    await sleep(2000);
+    exec('adb.exe shell input keyevent 66;', { cwd: './adb' }, (err, stdout, stderr) => {
+        if (err) {
+            console.error(err)
+        } else {
+        }
+    });
+    await sleep(3000);
 
     var http = require('http')
     http.get({ 'host': 'api.ipify.org', 'port': 80, 'path': '/' }, function (resp) {
@@ -180,7 +202,7 @@ async function loginEtsy(browser, page, info) {
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     const newPage = await newPagePromise
 
-    await page.waitForTimeout(10000)
+    await newPage.waitForTimeout(5000)
     await PuppUtils.click(newPage, `[data-identifier="${info.mail}"]`)
 
     await page.waitForTimeout(10000)

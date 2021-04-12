@@ -1,118 +1,54 @@
-// const puppeteer = require('puppeteer');
-const d3 = require('d3-dsv')
-const fs = require('fs')
-const { exec } = require('child_process');
-
-var ipHistory = []
-const tsvObject = d3.tsvParse(fs.readFileSync('./input/ipHistory.tsv', 'utf-8'))
-for (const temp in tsvObject) {
-    if (temp == 'columns') {
-        continue
-    }
-    ipHistory[Number(temp)] = tsvObject[temp]
-}
+const puppeteer = require('puppeteer');
+const http = require('http');
 
 
-exec('adb.exe shell svc wifi disable', {cwd: './adb'}, (err, stdout, stderr) => {
-    if (err) {
-      console.error(err)
-    } else {
-     console.log(`stdout: ${stdout}`);
-     console.log(`stderr: ${stderr}`);
-    }
-  });
-exec('adb.exe shell svc data enable', {cwd: './adb'}, (err, stdout, stderr) => {
-    if (err) {
-      console.error(err)
-    } else {
-     console.log(`stdout: ${stdout}`);
-     console.log(`stderr: ${stderr}`);
-    }
+async function startProfile(){
+  //Replace profileId value with existing browser profile ID.
+  let profileId = 'edac386e-761c-4cb0-bb08-422dc4a4c428';
+  let mlaPort = 35000;
+
+  /*Send GET request to start the browser profile by profileId.
+  Returns web socket as response which should be passed to puppeteer.connect*/
+  http.get(`http://127.0.0.1:${mlaPort}/api/v1/profile/start?automation=true&puppeteer=true&profileId=${profileId}`, (resp) => {
+  let data = '';
+  let ws = '';
+
+  //Receive response data by chunks
+  resp.on('data', (chunk) => {
+    data += chunk;
   });
 
-var http = require('http');
-const { now } = require('lodash');
-
-http.get({'host': 'api.ipify.org', 'port': 80, 'path': '/'}, function(resp) {
-resp.on('data', function(ip) {
-    console.log("My public IP address is: " + ip);
-    checkIp(ip);
-});
-});
-
-
-function checkIp(ip){
-    for(let i = 0; i < ipHistory.length; i++) {
-        if(ipHistory[i].ip==ip){
-            recreateIp()
-            return
-        }
+  /*The whole response data has been received. Handling JSON Parse errors,
+  verifying if ws is an object and contains the 'value' parameter.*/
+  resp.on('end', () => {
+    let ws;
+    try {
+      ws = JSON.parse(data);
+    } catch(err) {
+      console.log(err);
     }
-    console.log("Done: " + ip);
-    var newIp = { 'ip,time': 'fddf,ddr' }
-    fs.appendFileSync('./input/ipHistory.tsv', d3.tsvFormat(newIp), 'utf8')
+    if (typeof ws === 'object' && ws.hasOwnProperty('value')) {
+      console.log(`Browser websocket endpoint: ${ws.value}`);
+      run(ws.value);
+    }
+  });
+
+  }).on("error", (err) => {
+    console.log(err.message);
+  });
 }
 
-function recreateIp(){
-    exec('adb.exe shell svc data disable', {cwd: './adb'}, (err, stdout, stderr) => {
-        if (err) {
-          console.error(err)
-        } else {
-         console.log(`stdout: ${stdout}`);
-         console.log(`stderr: ${stderr}`);
-        }
-      });
-
-
-    exec('adb.exe shell svc data enable', {cwd: './adb'}, (err, stdout, stderr) => {
-        if (err) {
-          console.error(err)
-        } else {
-         console.log(`stdout: ${stdout}`);
-         console.log(`stderr: ${stderr}`);
-        }
-    });
-    checkIp(ip);
+async function run(ws) {
+  try{
+    //Connecting Puppeteer with Mimic instance and performing simple automation.
+    const browser = await puppeteer.connect({browserWSEndpoint: ws, defaultViewport:null});
+    const page = await browser.newPage();
+    await page.goto('https://multilogin.com');
+    await page.screenshot({ path: `/home/${process.env.USER}/Desktop/multiloginScreenshot.png` });
+    await browser.close();
+  } catch(err){
+    console.log(err.message);
+  }
 }
 
-// main()
-// async function main() {
-// 	try {
-// const browser = await puppeteer.launch({ headless: false,  defaultViewport: null, slowMo: 50})
-// 	const page = await browser.newPage()
-// 	await page.goto('https://etsy.com')
-// 	await page.waitForSelector('.select-signin')
-// 	// await page.goto('https://www.etsy.com/your/shops/ShopTestByCng/tools/listings')
-// 	let element = ''
-
-// 	element = await page.$('.select-signin')
-// 	element.click()
-
-// 	await page.waitForSelector('#join_neu_email_field')
-
-// 	element = await page.$('#join_neu_email_field')
-// 	await element.type('mymail@gmail.com')
-// 	await page.waitForTimeout(500)
-// 	element = await page.$('#join_neu_password_field')
-// 	await element.type('fdsafdsa')
-
-// 	element = await page.$('button[value="sign-in"]')
-
-// 	await element.click()
-// 	} catch (err) {
-// 		console.error(err)
-// 	}
-// }
-
-// function temp() {
-// 	    // element = await page.$('[name="variation_property"]')
-// 		console.log(element)
-// 		let box = await element.boundingBox()
-// 		console.log(box)
-// 		const x = box.x + (box.width / 2)
-// 		const y = box.y + (box.height / 2) + 30
-// 		console.log(x,y)
-// 		await page.mouse.move(x, y)
-	
-// 		// await page.mouse.wheel({ deltaY: -200 })
-// }
+startProfile();
