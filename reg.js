@@ -202,7 +202,7 @@ async function loginEtsy(browser, page, info) {
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     const newPage = await newPagePromise
 
-    await newPage.waitForTimeout(5000)
+    await page.waitForTimeout(5000)
     await PuppUtils.click(newPage, `[data-identifier="${info.mail}"]`)
 
     await page.waitForTimeout(5000)
