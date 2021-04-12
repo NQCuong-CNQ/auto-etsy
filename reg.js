@@ -185,7 +185,7 @@ async function loginGoogle(page, info) {
 
 async function loginEtsy(browser, page, info) {
     await page.goto('https://www.etsy.com')
-    await page.waitForTimeout(10000)
+    await page.waitForTimeout(5000)
     if (await PuppUtils.isElementVisbile(page, '.select-signin')) {
 
     } else {
@@ -196,7 +196,7 @@ async function loginEtsy(browser, page, info) {
 
     element = await page.$('.select-signin')
     await element.click()
-    await page.waitForTimeout(8000)
+    await page.waitForTimeout(3000)
     await PuppUtils.click(page, 'button[data-google-button="true"]')
 
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
