@@ -318,14 +318,20 @@ async function submitShoppreferences(page, info) {
 
 async function submitShopName(page, info) {
     await page.waitForSelector('#onboarding-shop-name-input')
-    await generateShopName(page, info)
+    await generateShopName(page, info, false)
 
     await PuppUtils.click(page, 'button[data-subway-next="true"]')
 }
 
-async function generateShopName(page, info) {
+async function generateShopName(page, info, reGen = false) {
     try {
-        let shopName = info.firstName + info.middleName + info.lastName + getDateOfBirth(0, info) + getDateOfBirth(1, info)
+        let shopName = ""
+        if(reGen) {
+            shopName = info.firstName + info.middleName + info.lastName + getDateOfBirth(0, info) + getDateOfBirth(1, info) + nanoid(2)
+        }
+        else{
+            shopName = info.firstName + info.middleName + info.lastName + getDateOfBirth(0, info) + getDateOfBirth(1, info)
+        }
         await PuppUtils.typeText(page, '#onboarding-shop-name-input', shopName)
         await PuppUtils.click(page, '[data-action="check-availability"]')
         await page.waitForTimeout(SLOW_MO)
@@ -353,12 +359,11 @@ async function generateShopName(page, info) {
             // let jsonResponse = await response.json()
             // if (jsonResponse.hasOwnProperty("result_type")) {
             console.log('Available', shopName)
-            infos[iNumCurrentAccount].nameShop = shopName
             saveInfos()
             return Promise.resolve()
         } else {
             console.log('Not Available', shopName)
-            generateShopName(page, info)
+            generateShopName(page, info, true)
         }
     } catch (err) {
         return Promise.reject(err)
@@ -682,7 +687,8 @@ function getDateOfBirth(order, info) {
     return parseInt(dob[order])
 }
 
-function saveInfos(info) {
+function saveInfos() {
+    infos[iNumCurrentAccount].nameShop = shopName
     fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
 }
 
