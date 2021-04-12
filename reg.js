@@ -241,8 +241,11 @@ async function onNextStep(page, info) {
         await createNewListing(page, info)
     } else if (await PuppUtils.isElementVisbile(page, '[data-ui="business-or-individual"]')) {   // Step 3
         await submitBussinessInfo(page, info)
-        return
-    } else if (false) {
+    }else if (await PuppUtils.isElementVisbile(page, '[data-region="credit-card-row"]')){   // Step 4
+        await setupBilling(page, info)
+    }
+
+    else if (false) {
         iNumCurrentAccount++
         console.log("done!")
         await checkAccountValid()
@@ -250,6 +253,57 @@ async function onNextStep(page, info) {
 
     await page.waitForTimeout(3000)
     await onNextStep(page, info)
+}
+
+async function setupBilling(page, info){
+    await PuppUtils.typeText(page, '#billing-cc-num', getCreditCard(info.card, 0))
+
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.$('#billing-cc-exp-mon')
+    await element.click()
+    await page.waitForTimeout(SLOW_MO)
+    await page.evaluate(() => {
+        $('#billing-cc-exp-mon').get(0).size = 1000
+    })
+    element = await page.$(`#billing-cc-exp-mon [${getCreditCard(info.card, 1)}]`)
+    await element.click()
+
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.$('#billing-cc-exp-year')
+    await element.click()
+    await page.waitForTimeout(SLOW_MO)
+    await page.evaluate(() => {
+        $('#billing-cc-exp-year').get(0).size = 1000
+    })
+    element = await page.$(`#billing-cc-exp-year [${getCreditCard(info.card, 2)}]`)
+    await element.click()
+
+    await page.waitForTimeout(SLOW_MO)
+    await PuppUtils.typeText(page, '#billing-cc-ccv', getCreditCard(info.card, 3))
+    await PuppUtils.typeText(page, '#billing-name', info.firstName + " "+ info.middleName + " "+ info.lastName)
+    await PuppUtils.typeText(page, 'input[name="billing[address]"]', info.address)
+    await PuppUtils.typeText(page, 'input[name="billing[city]"]', info.city)
+
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.$('[name="billing[state]"]')
+    await element.click()
+    await page.waitForTimeout(SLOW_MO)
+    await page.evaluate(() => {
+        $('[name="billing[state]"]').get(0).size = 1000
+    })
+    element = await page.$(`[name="billing[state]"] option[value="${info.state}"]`)
+    await element.click()
+
+    await page.waitForTimeout(SLOW_MO)
+    await PuppUtils.click(page, 'button[data-subway-final]') 
+}
+
+function getCreditCard(card, num){
+    let crCard = card.trim().split("|")
+    if(num == 3){
+        return crCard[num]
+    }
+    return parseInt(crCard[num])
 }
 
 async function checkStatusAccount(page) {
