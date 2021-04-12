@@ -61,8 +61,7 @@ async function checkAccountValid(){
             checkAccountValid()
             return
         }
-        await startRegAccount(info)
-        // await changeIp(info)
+        await changeIp(info)
     }
 }
 
@@ -73,29 +72,22 @@ function sleep(ms) {
 }
 
 async function changeIp(info) {
-    console.log(`disable wifi`)
-    exec('adb.exe shell svc wifi disable', { cwd: './adb' }, (err, stdout, stderr) => {
+    console.log(`AIRPLANE_MODE_SETTINGS`)
+    exec('adb.exe shell am start -a android.settings.AIRPLANE_MODE_SETTINGS', { cwd: './adb' }, (err, stdout, stderr) => {
         if (err) {
             console.error(err)
         } else {
         }
     });
-    console.log(`disable data`)
-    exec('adb.exe shell svc data disable', { cwd: './adb' }, (err, stdout, stderr) => {
+    await sleep(SLOW_MO);
+    console.log(`toggle airplane mode`)
+    exec('adb.exe shell input keyevent 23 ; sleep 1; ./adb.exe shell input keyevent 23; sleep 1; ./adb.exe shell input keyevent 3;', { cwd: './adb' }, (err, stdout, stderr) => {
         if (err) {
             console.error(err)
         } else {
         }
     });
-    await sleep(5000);
-    console.log(`enable data`)
-    exec('adb.exe shell svc data enable', { cwd: './adb' }, (err, stdout, stderr) => {
-        if (err) {
-            console.error(err)
-        } else {
-        }
-    });
-    await sleep(5000);
+    await sleep(SLOW_MO);
 
     var http = require('http')
     http.get({ 'host': 'api.ipify.org', 'port': 80, 'path': '/' }, function (resp) {
@@ -106,17 +98,17 @@ async function changeIp(info) {
     });
 }
 
-async function checkIp(ip, info, checking = true) {
-    if (isIpExist(ip) && checking) {
+async function checkIp(ip, info) {
+    if (isIpExist(ip)) {
         console.log("Duplicate IP: " + ip);
-        await recreateIp(ip, info)
+        await changeIp(ip, info)
         return
     }
     console.log("Save IP address: " + ip);
     infos[iNumCurrentAccount].ip = ip
     fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
 
-    await sleep(2000);
+    await sleep(1000);
     await startRegAccount(info)
 }
 
@@ -126,26 +118,6 @@ function isIpExist(ip) {
             return true
         }
     }
-}
-
-async function recreateIp(ip, info) {
-    console.log(`disable data`)
-    exec('adb.exe shell svc data disable', { cwd: './adb' }, (err, stdout, stderr) => {
-        if (err) {
-            console.error(err)
-        } else {
-        }
-    });
-    await sleep(5000);
-    console.log(`enable data`)
-    exec('adb.exe shell svc data enable', { cwd: './adb' }, (err, stdout, stderr) => {
-        if (err) {
-            console.error(err)
-        } else {
-        }
-    });
-    await sleep(5000);
-    checkIp(ip, info, false);
 }
 
 async function startRegAccount(info) {
@@ -159,19 +131,19 @@ async function startRegAccount(info) {
     await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
 
     await page.waitForTimeout(15000)
-    if (page.url().includes('https://mail.google.com/mail/u/0/#inbox')) {
+    if (page.url().includes('https://mail.google.com/mail/u/0/')) {
         await loginEtsy(browser, page, info)
     } else {
         await loginGoogle(page, info)
         await page.waitForTimeout(10000)
-        if (page.url().includes('https://mail.google.com/mail/u/0/#inbox')) {
+        if (page.url().includes('https://mail.google.com/mail/u/0/')) {
             await loginEtsy(browser, page, info)
         } else if (page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
             await confirmRecoveryOption(browser, page, info)
         }
         else{
             await page.waitForTimeout(5000)
-            if (page.url().includes('https://mail.google.com/mail/u/0/#inbox')) {
+            if (page.url().includes('https://mail.google.com/mail/u/0/')) {
                 await loginEtsy(browser, page, info)
             }
             return
@@ -208,8 +180,8 @@ async function loginEtsy(browser, page, info) {
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     const newPage = await newPagePromise
 
-    await page.waitForTimeout(8000)
-    await PuppUtils.click(newPage, `[data-email="${info.mail}"]`)
+    await page.waitForTimeout(10000)
+    await PuppUtils.click(newPage, `[data-identifier="${info.mail}"]`)
 
     await page.waitForTimeout(10000)
     if (await PuppUtils.isElementVisbile(page, '[aria-describedby="ge-tooltip-label-you-menu"]')) {
