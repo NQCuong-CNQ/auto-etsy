@@ -207,7 +207,7 @@ async function loginEtsy(browser, page, info) {
     await PuppUtils.click(newPage, `[data-identifier="${info.mail}"]`)
 
     await page.waitForTimeout(5000)
-console.log("registerShop")
+    console.log("registerShop")
     if (await PuppUtils.isElementVisbile(page, '[aria-describedby="ge-tooltip-label-you-menu"]')) {
         await registerShop(page, info)
         return
@@ -307,8 +307,8 @@ async function checkStatusAccount(page) {
     if ((await page.content()).includes('Your account is currently suspended')) {
         infos[iNumCurrentAccount].status = "Suspended"
         fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
-        return true
-    } return false
+        return Promise.resolve(true)
+    } return Promise.resolve(false)
 }
 
 async function submitShoppreferences(page, info) {
@@ -383,7 +383,7 @@ async function generateShopName(page, info, reGen = false) {
 
         await PuppUtils.typeText(page, '#onboarding-shop-name-input', shopName)
         await PuppUtils.click(page, '[data-action="check-availability"]')
-        await page.waitForTimeout(SLOW_MO)
+        await page.waitForTimeout(2000)
 
         if (await PuppUtils.isElementVisbile(page, '#available[style="display: block;"]')) {
             console.log('Available', shopName)
@@ -392,6 +392,7 @@ async function generateShopName(page, info, reGen = false) {
         } else {
             console.log('Not Available', shopName)
             generateShopName(page, info, true)
+            return Promise.resolve()
         }
     } catch (err) {
         return Promise.reject(err)
