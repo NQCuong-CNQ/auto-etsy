@@ -208,10 +208,10 @@ async function loginEtsy(browser, page, info) {
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     const newPage = await newPagePromise
 
+    await page.waitForTimeout(3000)
     await PuppUtils.click(newPage, `[data-email="${info.mail}"]`)
-
+    
     await page.waitForTimeout(6000)
-
     if (await PuppUtils.isElementVisbile(page, '[aria-describedby="ge-tooltip-label-you-menu"]')) {
         await registerShop(page, info)
         return
