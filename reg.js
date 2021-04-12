@@ -205,7 +205,7 @@ async function loginEtsy(browser, page, info) {
     await newPage.waitForTimeout(5000)
     await PuppUtils.click(newPage, `[data-identifier="${info.mail}"]`)
 
-    await page.waitForTimeout(10000)
+    await page.waitForTimeout(5000)
     if (await PuppUtils.isElementVisbile(page, '[aria-describedby="ge-tooltip-label-you-menu"]')) {
         await registerShop(page, info)
         return
