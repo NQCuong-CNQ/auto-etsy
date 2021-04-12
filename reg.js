@@ -88,7 +88,7 @@ async function changeIp(info) {
         } else {
         }
     });
-    await sleep(3000);
+    await sleep(5000);
     console.log(`enable data`)
     exec('adb.exe shell svc data enable', { cwd: './adb' }, (err, stdout, stderr) => {
         if (err) {
@@ -96,7 +96,7 @@ async function changeIp(info) {
         } else {
         }
     });
-    await sleep(3000);
+    await sleep(5000);
 
     var http = require('http')
     http.get({ 'host': 'api.ipify.org', 'port': 80, 'path': '/' }, function (resp) {
@@ -136,7 +136,7 @@ async function recreateIp(ip) {
         } else {
         }
     });
-    await sleep(3000);
+    await sleep(5000);
     console.log(`enable data`)
     exec('adb.exe shell svc data enable', { cwd: './adb' }, (err, stdout, stderr) => {
         if (err) {
@@ -144,7 +144,7 @@ async function recreateIp(ip) {
         } else {
         }
     });
-    await sleep(3000);
+    await sleep(5000);
     checkIp(ip);
 }
 
@@ -158,12 +158,12 @@ async function startRegAccount(info) {
     const page = await browser.newPage()
     await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
 
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(15000)
     if (page.url().includes('https://mail.google.com/mail/u/0/#inbox')) {
         await loginEtsy(browser, page, info)
     } else {
         await loginGoogle(page, info)
-        await page.waitForTimeout(5000)
+        await page.waitForTimeout(10000)
         if (page.url().includes('https://mail.google.com/mail/u/0/#inbox')) {
             await loginEtsy(browser, page, info)
         } else if (page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
@@ -184,7 +184,7 @@ async function loginGoogle(page, info) {
     await PuppUtils.typeText(page, '#identifierId', info.mail.trim().toLowerCase())
     await PuppUtils.waitNextUrl(page, '#identifierNext')
     await PuppUtils.jsWaitForSelector(page, '[name="password"]', 4000)
-    await page.waitForTimeout(1000)
+    await page.waitForTimeout(5000)
     await PuppUtils.typeText(page, '[name="password"]', info.password.trim())
     await PuppUtils.waitNextUrl(page, '#passwordNext')
 }
@@ -202,7 +202,7 @@ async function loginEtsy(browser, page, info) {
 
     element = await page.$('.select-signin')
     await element.click()
-    await page.waitForTimeout(3000)
+    await page.waitForTimeout(5000)
     await PuppUtils.click(page, 'button[data-google-button="true"]')
 
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
@@ -569,6 +569,7 @@ async function createNewListing(page, info) {
 }
 
 async function submitBussinessInfo(page, info) {
+    await page.waitForTimeout(4000)
     await page.evaluate(() => {
         element = document.querySelector('#bank-country-id');
         if (element) {
