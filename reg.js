@@ -61,7 +61,8 @@ async function checkAccountValid(){
             checkAccountValid()
             return
         }
-        await changeIp(info)
+        await startRegAccount(info)
+        // await changeIp(info)
     }
 }
 
@@ -190,8 +191,8 @@ async function loginGoogle(page, info) {
 
 async function loginEtsy(browser, page, info) {
     await page.goto('https://www.etsy.com')
-    await page.waitForTimeout(10000)
-    if (await PuppUtils.isElementVisbile(page, '.select-signin')) {
+    await page.waitForTimeout(5000)
+    if (await PuppUtils.jsWaitForSelector(page, '.select-signin', 5000)) {
 
     } else {
         await registerShop(page, info)
@@ -201,16 +202,16 @@ async function loginEtsy(browser, page, info) {
 
     element = await page.$('.select-signin')
     await element.click()
-    await page.waitForTimeout(6000)
+    await page.waitForTimeout(8000)
     await PuppUtils.click(page, 'button[data-google-button="true"]')
 
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     const newPage = await newPagePromise
 
-    await page.waitForTimeout(6000)
+    await page.waitForTimeout(8000)
     await PuppUtils.click(newPage, `[data-email="${info.mail}"]`)
 
-    await page.waitForTimeout(6000)
+    await page.waitForTimeout(10000)
     if (await PuppUtils.isElementVisbile(page, '[aria-describedby="ge-tooltip-label-you-menu"]')) {
         await registerShop(page, info)
         return
