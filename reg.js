@@ -150,6 +150,7 @@ async function startRegAccount(info) {
         args: ['--no-sandbox', '--start-maximized']
     })
     const page = await browser.newPage()
+    await page.setDefaultNavigationTimeout(0); 
     await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
 
     await page.waitForTimeout(15000)
@@ -201,6 +202,7 @@ async function loginEtsy(browser, page, info) {
 
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     const newPage = await newPagePromise
+    await newPage.setDefaultNavigationTimeout(0); 
     console.log("cho")
     await page.waitForTimeout(8000)
     console.log("click")
