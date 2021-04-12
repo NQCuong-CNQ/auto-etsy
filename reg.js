@@ -190,7 +190,7 @@ async function loginGoogle(page, info) {
 
 async function loginEtsy(browser, page, info) {
     await page.goto('https://www.etsy.com')
-    await page.waitForTimeout(5000)
+    await page.waitForTimeout(10000)
     if (await PuppUtils.isElementVisbile(page, '.select-signin')) {
 
     } else {
