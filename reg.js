@@ -392,7 +392,7 @@ async function createNewListing(page, info) {
     await page.waitForTimeout(SLOW_MO)
 
     await PuppUtils.typeText(page, "#taxonomy-search", info.category)
-    await page.waitForTimeout(200)
+    await page.waitForTimeout(2000)
     await page.keyboard.press('Enter')
 
     await PuppUtils.typeText(page, "#description-text-area-input", info.description)
