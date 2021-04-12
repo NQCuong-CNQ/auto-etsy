@@ -107,9 +107,10 @@ async function changeIp(info) {
     });
 }
 
-async function checkIp(ip, info) {
-    if (isIpExist(ip)) {
-        await recreateIp(ip)
+async function checkIp(ip, info, checking = true) {
+    if (isIpExist(ip) && checking) {
+        console.log("Duplicate IP: " + ip);
+        await recreateIp(ip, info)
         return
     }
     console.log("Save IP address: " + ip);
@@ -128,7 +129,7 @@ function isIpExist(ip) {
     }
 }
 
-async function recreateIp(ip) {
+async function recreateIp(ip, info) {
     console.log(`disable data`)
     exec('adb.exe shell svc data disable', { cwd: './adb' }, (err, stdout, stderr) => {
         if (err) {
@@ -145,7 +146,7 @@ async function recreateIp(ip) {
         }
     });
     await sleep(5000);
-    checkIp(ip);
+    checkIp(ip, info, false);
 }
 
 async function startRegAccount(info) {
@@ -210,7 +211,7 @@ async function loginEtsy(browser, page, info) {
 
     await page.waitForTimeout(3000)
     await PuppUtils.click(newPage, `[data-email="${info.mail}"]`)
-    
+
     await page.waitForTimeout(6000)
     if (await PuppUtils.isElementVisbile(page, '[aria-describedby="ge-tooltip-label-you-menu"]')) {
         await registerShop(page, info)
@@ -318,7 +319,7 @@ async function submitShoppreferences(page, info) {
 
 async function submitShopName(page, info) {
     await page.waitForSelector('#onboarding-shop-name-input')
-    await generateShopName(page, info, false)
+    await generateShopName(page, info)
 
     await PuppUtils.click(page, 'button[data-subway-next="true"]')
 }
