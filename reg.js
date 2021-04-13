@@ -55,7 +55,7 @@ async function checkAccountValid(){
     if (iNumCurrentAccount <= infos.length) {
         let info = infos[iNumCurrentAccount]
         console.log(info.mail)
-        if (infos[iNumCurrentAccount].status == "Suspended" || infos[iNumCurrentAccount].status == "Successful") {
+        if (infos[iNumCurrentAccount].status == "Suspended" || infos[iNumCurrentAccount].status == "Success") {
             console.log("This account is Passed")
             iNumCurrentAccount++
             checkAccountValid()
@@ -318,12 +318,14 @@ async function onNextStep(page, info) {
         await submitBussinessInfo(page, info)
     } else if (await PuppUtils.isElementVisbile(page, '[data-onboarding-step="setup-billing"]')){   // Step 4
         await setupBilling(page, info)
-        return
-    } else if (false) {
-        iNumCurrentAccount++
-        await browser.close();
-        console.log("done!")
-        await checkAccountValid()
+    } else if (page.url().includes('https://www.etsy.com/ca/shop/')) {
+        var datetime = new Date();
+        infos[iNumCurrentAccount].dayREG = datetime.toISOString().slice(0,10)
+        infos[iNumCurrentAccount].status = "Success"
+        // iNumCurrentAccount++
+        // await browser.close();
+        // console.log("done!")
+        // await checkAccountValid()
     }
 
     await page.waitForTimeout(5000)
