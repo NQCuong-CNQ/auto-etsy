@@ -9,7 +9,7 @@ const { nanoid } = require('nanoid')
 const { exec } = require('child_process');
 
 const SLOW_MO = 1000
-
+var browser
 var storage
 var infos = []
 var iNumCurrentAccount = 0
@@ -55,13 +55,14 @@ async function checkAccountValid(){
     if (iNumCurrentAccount <= infos.length) {
         let info = infos[iNumCurrentAccount]
         console.log(info.mail)
-        if (infos[iNumCurrentAccount].status == "Suspended" || infos[iNumCurrentAccount].status == "Successful") {
+        if (infos[iNumCurrentAccount].status == "Suspended" || infos[iNumCurrentAccount].status == "Success") {
             console.log("This account is Passed")
             iNumCurrentAccount++
             checkAccountValid()
             return
         }
-        await changeIp(info)
+        //await changeIp(info)
+        await startRegAccount(info)
     }
 }
 
@@ -82,13 +83,9 @@ async function changeIp(info) {
     await sleep(5000)
     await toggleHome()
     await toggleAPMSettings()
-    await toggleTab()
-    await toggleTab()
     await toggleEnter()
     await toggleHome()
     await toggleAPMSettings()
-    await toggleTab()
-    await toggleTab()
     await toggleEnter()
     await toggleHome()
     await toggleCheckAPM()
@@ -112,8 +109,6 @@ async function changeIp(info) {
 async function toggleCheckAPM(){
     console.log("toggleCheckAPM")
     exec('adb.exe shell settings get global airplane_mode_on', { cwd: './adb' }, async function(err, stdout, stderr) {
-        console.log(stdout)
-
         if (err) {
             console.error(err)
         } else {
@@ -121,8 +116,6 @@ async function toggleCheckAPM(){
                 console.log("Retry turn off airplane mode!")
                 await toggleHome()
                 await toggleAPMSettings()
-                await toggleTab()
-                await toggleTab()
                 await toggleEnter()
                 await toggleHome()
             }else{
@@ -203,7 +196,7 @@ function isIpExist(ip) {
 }
 
 async function startRegAccount(info) {
-    const browser = await puppeteer.launch({
+    browser = await puppeteer.launch({
         headless: false, defaultViewport: null, slowMo: 50,
         executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
         userDataDir: `./CR/${info.mail.trim().toLowerCase()}`,
@@ -212,27 +205,52 @@ async function startRegAccount(info) {
     const page = await browser.newPage()
     await page.setDefaultNavigationTimeout(0); 
     await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
+    await checkLoginProgress(browser, page, info)
+    return
+}
 
+async function checkLoginProgress(browser, page, info){
     await page.waitForTimeout(10000)
     if (page.url().includes('https://mail.google.com/mail/u/0/')) {
         await loginEtsy(browser, page, info)
+        return
+    } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')){
+        await addGoogleBirthday(page, info)
+    } else if (page.url().includes('https://gds.google.com/web/chip')){
+        await addGoogleChip(page, info)
     } else {
         await loginGoogle(page, info)
         await page.waitForTimeout(10000)
         if (page.url().includes('https://mail.google.com/mail/u/0/')) {
             await loginEtsy(browser, page, info)
         } else if (page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
-            await confirmRecoveryOption(browser, page, info)
-        }
-        else{
-            await page.waitForTimeout(5000)
-            if (page.url().includes('https://mail.google.com/mail/u/0/')) {
-                await loginEtsy(browser, page, info)
-            }
-            return
+            await confirmRecoveryOption(page)
+        } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')){
+            await addGoogleBirthday(page, info)
+        } else if (page.url().includes('https://gds.google.com/web/chip')){
+            await addGoogleChip(page)
         }
     }
-    return
+    checkLoginProgress(browser, page, info)
+}
+
+async function addGoogleChip(page){
+    await PuppUtils.click(page, '//*[@id="yDmH0d"]/c-wiz/div/div/div/div[2]/div[4]/div[1]')
+}
+
+async function addGoogleBirthday(page, info){
+    await PuppUtils.typeText(page, 'input[placeholder="DD"]', getDateOfBirth(0, info))
+
+    let element = await page.$(`div[role="combobox"]`)
+    await element.click()
+    await page.waitForTimeout(SLOW_MO)
+    await page.evaluate(() => {
+        $(`div[role="combobox"]`).get(0).size = 1000
+    })
+    element = await page.$(`li[data-value="${parseInt(getDateOfBirth(1, info))}"]`)
+    await element.click()
+
+    await PuppUtils.typeText(page, 'input[placeholder="YYYY"]', getDateOfBirth(0, info))
 }
 
 async function loginGoogle(page, info) {
@@ -257,25 +275,17 @@ async function loginEtsy(browser, page, info) {
 
     element = await page.$('.select-signin')
     await element.click()
-    await page.waitForTimeout(3000)
-    await PuppUtils.click(page, 'button[data-google-button="true"]')
-
+    await page.waitForTimeout(5000)
+    
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
+    await PuppUtils.click(page, 'button[data-google-button="true"]')
     const newPage = await newPagePromise
 
-    console.log("cho")
     await page.waitForTimeout(8000)
-    console.log("click")
-    if (await PuppUtils.isElementVisbile(newPage, `[data-identifier="${info.mail}"]` || await PuppUtils.jsWaitForSelector(newPage, `[data-identifier="${info.mail}"]`, 1000))) {
-        await PuppUtils.click(newPage, `[data-identifier="${info.mail}"]`)
-    }else{
-        console.log("khong thay")
-        return
-    }
+    await PuppUtils.click(newPage, '[data-identifier]')
     
-    await page.waitForTimeout(5000)
-    console.log("registerShop")
-    if (await PuppUtils.isElementVisbile(page, '[aria-describedby="ge-tooltip-label-you-menu"]')) {
+    await page.waitForTimeout(15000)
+    if (await PuppUtils.isElementVisbile(page, '[data-ge-nav-event-name="gnav_show_user_menu"]')) {
         await registerShop(page, info)
         return
     }
@@ -283,6 +293,7 @@ async function loginEtsy(browser, page, info) {
 
 async function registerShop(page, info) {
     await page.goto('https://www.etsy.com/sell?ref=hdr-sell&from_page=https%3A%2F%2Fwww.etsy.com%2F')
+    await page.waitForTimeout(2000)
     await page.goto('https://www.etsy.com/your/shop/create?us_sell_create_value')
 
     onNextStep(page, info)
@@ -291,28 +302,33 @@ async function registerShop(page, info) {
 async function onNextStep(page, info) {
     if (await checkStatusAccount(page)) {
         console.log("Suspended")
+        await browser.close()
         iNumCurrentAccount++
         await checkAccountValid()
         return
     }
     // Step 1
-    if (await PuppUtils.isElementVisbile(page, '#address-country')) {
+    if (await PuppUtils.isElementVisbile(page, '[data-onboarding-step="set-preferences"]')) {
         await submitShoppreferences(page, info)  // Step 1
-    } else if (await PuppUtils.isElementVisbile(page, '#onboarding-shop-name-input')) {   // Step 2
+    } else if (await PuppUtils.isElementVisbile(page, '[data-onboarding-step="shop-name"]')) {   // Step 2
         await submitShopName(page, info)
-    } else if (await PuppUtils.jsIsSelectorExisted(page, '[data-region="listings-container"] a')) {   // Step 3
+    } else if (await PuppUtils.isElementVisbile(page, '[data-onboarding-step="list-items"]')) {   // Step 3
         await createNewListing(page, info)
-    } else if (await PuppUtils.isElementVisbile(page, '[data-ui="business-or-individual"]')) {   // Step 3
+    } else if (await PuppUtils.isElementVisbile(page, '[data-onboarding-step="get-paid"]')) {   // Step 3
         await submitBussinessInfo(page, info)
-    } else if (await PuppUtils.isElementVisbile(page, '[data-region="credit-card-row"]')){   // Step 4
+    } else if (await PuppUtils.isElementVisbile(page, '[data-onboarding-step="setup-billing"]')){   // Step 4
         await setupBilling(page, info)
-    } else if (false) {
-        iNumCurrentAccount++
-        console.log("done!")
-        await checkAccountValid()
+    } else if (page.url().includes('https://www.etsy.com/ca/shop/')) {
+        var datetime = new Date();
+        infos[iNumCurrentAccount].dayREG = datetime.toISOString().slice(0,10)
+        infos[iNumCurrentAccount].status = "Success"
+        // iNumCurrentAccount++
+        // await browser.close();
+        // console.log("done!")
+        // await checkAccountValid()
     }
 
-    await page.waitForTimeout(3000)
+    await page.waitForTimeout(5000)
     await onNextStep(page, info)
 }
 
@@ -326,7 +342,7 @@ async function setupBilling(page, info){
     await page.evaluate(() => {
         $('#billing-cc-exp-mon').get(0).size = 1000
     })
-    element = await page.$(`#billing-cc-exp-mon [${getCreditCard(info.card, 1)}]`)
+    element = await page.$(`#billing-cc-exp-mon option[value="${getCreditCard(info.card, 1)}"]`)
     await element.click()
 
     await page.waitForTimeout(SLOW_MO)
@@ -336,7 +352,7 @@ async function setupBilling(page, info){
     await page.evaluate(() => {
         $('#billing-cc-exp-year').get(0).size = 1000
     })
-    element = await page.$(`#billing-cc-exp-year [${getCreditCard(info.card, 2)}]`)
+    element = await page.$(`#billing-cc-exp-year option[value="${getCreditCard(info.card, 2)}"]`)
     await element.click()
 
     await page.waitForTimeout(SLOW_MO)
@@ -356,15 +372,17 @@ async function setupBilling(page, info){
     await element.click()
 
     await page.waitForTimeout(SLOW_MO)
+    await PuppUtils.typeText(page, 'input[name="billing[zip]"]', info.zip)
+    await page.waitForTimeout(SLOW_MO)
     await PuppUtils.click(page, 'button[data-subway-final]') 
 }
 
 function getCreditCard(card, num){
     let crCard = card.trim().split("|")
-    if(num == 3){
-        return crCard[num]
+    if(num == 1){
+        return parseInt(crCard[num])
     }
-    return parseInt(crCard[num])
+    return crCard[num]
 }
 
 async function checkStatusAccount(page) {
@@ -447,8 +465,11 @@ async function generateShopName(page, info, reGen = false) {
         }
 
         await PuppUtils.typeText(page, '#onboarding-shop-name-input', shopName)
-        await PuppUtils.click(page, '[data-action="check-availability"]')
-        await page.waitForTimeout(2000)
+        await page.waitForTimeout(500)
+        if(!reGen){
+            await PuppUtils.click(page, '[data-action="check-availability"]')
+            await page.waitForTimeout(2500)
+        }
 
         if (await PuppUtils.isElementVisbile(page, '#available[style="display: block;"]')) {
             console.log('Available', shopName)
@@ -672,7 +693,6 @@ async function submitBussinessInfo(page, info) {
         }
     })
 
-
     await page.waitForTimeout(SLOW_MO)
     element = await page.$('#bank-country-id')
     await element.click()
@@ -770,9 +790,15 @@ function getAddress(order, info) {
     }
 }
 
-function getDateOfBirth(order, info) {
+function getDateOfBirth(num, info) {
     let dob = info.dob.trim().split("/")
-    return parseInt(dob[order])
+    if(num == 1){
+        if(dob[num].length == 1){
+            dob[num] = "0" + dob[num]
+            return dob[num]
+        }
+    }
+    return parseInt(dob[num])
 }
 
 function saveInfos() {
@@ -780,6 +806,6 @@ function saveInfos() {
     fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
 }
 
-function confirmRecoveryOption(browser, page, info) {
-
+async function confirmRecoveryOption(page) {
+    await PuppUtils.click(page, '//*[@id="yDmH0d"]/c-wiz[2]/c-wiz/div/div[1]/div/div/div/div[2]/div[3]/div/div[2]/div')
 }
