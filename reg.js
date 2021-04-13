@@ -281,6 +281,7 @@ async function registerShop(page, info) {
 async function onNextStep(page, info) {
     if (await checkStatusAccount(page)) {
         console.log("Suspended")
+        await browser.close()
         iNumCurrentAccount++
         await checkAccountValid()
         return
