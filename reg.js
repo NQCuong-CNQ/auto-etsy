@@ -78,7 +78,6 @@ async function changeIp(info) {
     await toggleTab()
     await toggleTab()
     await toggleTab()
-    await toggleTab()
     await toggleEnter()
     await sleep(5000)
     await toggleHome()
@@ -94,7 +93,6 @@ async function changeIp(info) {
     await toggleHome()
     await toggleCheckAPM()
     await toggleTetherSettings()
-    await toggleTab()
     await toggleTab()
     await toggleTab()
     await toggleTab()
@@ -179,7 +177,7 @@ async function toggleTab(){
         } else {
         }
     })
-    await sleep(500)
+    await sleep(1000)
 }
 
 async function checkIp(ip, info) {
