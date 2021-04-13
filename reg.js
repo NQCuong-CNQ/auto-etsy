@@ -197,16 +197,6 @@ function isIpExist(ip) {
     }
 }
 
-// async function startRegAccount(info) {
-//     browser = await puppeteer.launch({
-//         headless: false, defaultViewport: null, slowMo: 50,
-//         executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
-//         userDataDir: `./CR/${info.mail.trim().toLowerCase()}`,
-//         args: ['--no-sandbox', '--start-maximized']
-//     })
-//     const page = await browser.newPage()
-// }
-
 async function startRegAccount(info) {
     let profileId = info.profileID
     console.log(profileId)
@@ -225,7 +215,6 @@ async function startRegAccount(info) {
                 console.log(err)
             }
             if (typeof ws === 'object' && ws.hasOwnProperty('value')) {
-                console.log(`Browser websocket endpoint: ${ws.value}`)
                 await runBrowser(ws.value, info)
             }
         })
@@ -237,21 +226,21 @@ async function startRegAccount(info) {
 
 async function runBrowser(ws, info) {
     try {
-        const browser = await puppeteer.connect({ browserWSEndpoint: ws, defaultViewport: null })
+        browser = await puppeteer.connect({ browserWSEndpoint: ws, defaultViewport: null })
         const page = await browser.newPage()
         await page.setDefaultNavigationTimeout(0)
         await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
-        await checkLoginProgress(browser, page, info)
+        await checkLoginProgress(page, info)
         return
     } catch (err) {
         console.log(err.message)
     }
 }
 
-async function checkLoginProgress(browser, page, info) {
+async function checkLoginProgress(page, info) {
     await page.waitForTimeout(10000)
     if (page.url().includes('https://mail.google.com/mail/u/0/')) {
-        await loginEtsy(browser, page, info)
+        await loginEtsy(page, info)
         return
     } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')) {
         await addGoogleBirthday(page, info)
@@ -261,7 +250,7 @@ async function checkLoginProgress(browser, page, info) {
         await loginGoogle(page, info)
         await page.waitForTimeout(10000)
         if (page.url().includes('https://mail.google.com/mail/u/0/')) {
-            await loginEtsy(browser, page, info)
+            await loginEtsy(page, info)
         } else if (page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
             await confirmRecoveryOption(page)
         } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')) {
@@ -270,7 +259,7 @@ async function checkLoginProgress(browser, page, info) {
             await addGoogleChip(page)
         }
     }
-    checkLoginProgress(browser, page, info)
+    checkLoginProgress(page, info)
 }
 
 async function addGoogleChip(page) {
@@ -301,7 +290,7 @@ async function loginGoogle(page, info) {
     await PuppUtils.waitNextUrl(page, '#passwordNext')
 }
 
-async function loginEtsy(browser, page, info) {
+async function loginEtsy(page, info) {
     await page.goto('https://www.etsy.com')
     await page.waitForTimeout(5000)
     if (await PuppUtils.isElementVisbile(page, '.select-signin')) {
@@ -714,19 +703,110 @@ async function createNewListing(page, info) {
     })
     element = await page.$('#processing_time_select [value="4"]')
     await element.click()
-
+    // Xoa canada
     await page.waitForTimeout(SLOW_MO)
     element = await page.evaluateHandle(() => {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Canada")`).find('.wt-grid__item-md-9 .wt-btn.wt-btn--transparent.wt-btn--icon')[0]
     })
     await element.click()
+    // Chon shipping carrier
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.evaluateHandle(() => {
+        return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("United States")`).find('#shipping_carrier')[0]
+    })
+    await element.click()
+    await page.evaluate((element) => {
+        element.get(0).size = 1000
+    }, element)
+    element = await page.evaluateHandle(() => {
+        return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("United States")`).find('#shipping_carrier option[value="2"]')[0]
+    })
+    await element.click()
+    //Chon fix price shipping
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.evaluateHandle(() => {
+        return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("United States")`).find('#charge_option')[0]
+    })
+    await element.click()
+    await page.evaluate((element) => {
+        element.get(0).size = 1000
+    }, element)
+    element = await page.evaluateHandle(() => {
+        return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("United States")`).find('#charge_option option[value="fixed"]')[0]
+    })
+    await element.click()
+    //Nhap Price one item
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.evaluateHandle(() => {
+        return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("United States")`).find('label:contains("One item")').parent().find('input')[0]
+    })
+    await PuppUtils.typeText(page, element, "8.99")
+    //Nhap Price one item
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.evaluateHandle(() => {
+        return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("United States")`).find('button:contains("Additional item")').parent().parent().find('input')[0]
+    })
+    await PuppUtils.typeText(page, element, "3.99")
+    // Chon shipping carrier
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.evaluateHandle(() => {
+        return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Everywhere else")`).find('#shipping_carrier')[0]
+    })
+    await element.click()
+    await page.evaluate((element) => {
+        element.get(0).size = 1000
+    }, element)
+    element = await page.evaluateHandle(() => {
+        return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Everywhere else")`).find('#shipping_carrier option[value="2"]')[0]
+    })
+    await element.click()
+    //Chon fix price shipping
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.evaluateHandle(() => {
+        return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Everywhere else")`).find('#charge_option')[0]
+    })
+    await element.click()
+    await page.evaluate((element) => {
+        element.get(0).size = 1000
+    }, element)
+    element = await page.evaluateHandle(() => {
+        return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Everywhere else")`).find('#charge_option option[value="fixed"]')[0]
+    })
+    await element.click()
+    //Nhap Price one item
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.evaluateHandle(() => {
+        return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Everywhere else")`).find('label:contains("One item")').parent().find('input')[0]
+    })
+    await PuppUtils.typeText(page, element, "19.99")
+    //Nhap Price one item
+    await page.waitForTimeout(SLOW_MO)
+    element = await page.evaluateHandle(() => {
+        return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Everywhere else")`).find('button:contains("Additional item")').parent().parent().find('input')[0]
+    })
+    await PuppUtils.typeText(page, element, "10.99")
 
     await page.waitForTimeout(SLOW_MO)
-    await PuppUtils.click(page, '[data-region="shipping-with-profile-management"] button')
-    await PuppUtils.typeText(page, '#weight_primary', '1')
-    await PuppUtils.typeText(page, '#item_length', '1')
-    await PuppUtils.typeText(page, '#item_width', '1')
-    await PuppUtils.typeText(page, '#item_height', '1')
+    element = await page.evaluateHandle(() => {
+        return $(`button:contains("Save as a shipping profile")`)[0]
+    })
+    await PuppUtils.click(page, element)
+
+    await page.waitForTimeout(5000)
+    element = await page.evaluateHandle(() => {
+        return $(`button:contains("Confirm")`)[0]
+    })
+    await PuppUtils.click(page, element)
+
+    await page.waitForTimeout(2000)
+    await PuppUtils.typeText(page, 'input[placeholder="Name of the profile"]', "CANVAS CC")
+
+    element = await page.evaluateHandle(() => {
+        return $(`button:contains("Create profile")`)[0]
+    })
+    await PuppUtils.click(page, element)
+    await page.waitForTimeout(3000)
+
     await PuppUtils.click(page, '.page-footer [data-save]')
 
     await page.waitForTimeout(4000)
