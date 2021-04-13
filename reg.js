@@ -6,7 +6,8 @@ const fs = require('fs')
 const PuppUtils = require('./lib/PuppUtils')
 const fetch = require('node-fetch')
 const { nanoid } = require('nanoid')
-const { exec } = require('child_process');
+const { exec } = require('child_process')
+const http = require('http')
 
 const SLOW_MO = 1000
 const mlaPort = 35000;
@@ -207,45 +208,45 @@ function isIpExist(ip) {
 // }
 
 async function startRegAccount(info) {
-    let profileId = info.profileId;
-    http.get(`http://127.0.0.1:${mlaPort}/api/v1/profile/start?automation=true&puppeteer=true&profileId=${profileId}`, (resp) => {
-        let data = '';
-        let ws = '';
+    let profileId = info.profileID
+    console.log(profileId)
+    http.get(`http://127.0.0.1:${mlaPort}/api/v1/profile/start?automation=true&puppeteer=true&profileId=${profileId}`, async function(resp) {
+        let data = ''
+        let ws = ''
 
         resp.on('data', (chunk) => {
-            data += chunk;
-        });
+            data += chunk
+        })
 
-        resp.on('end', () => {
+        resp.on('end', async function() {
             try {
-                ws = JSON.parse(data);
+                ws = JSON.parse(data)
             } catch (err) {
-                console.log(err);
+                console.log(err)
             }
             if (typeof ws === 'object' && ws.hasOwnProperty('value')) {
-                console.log(`Browser websocket endpoint: ${ws.value}`);
-                await runBrowser(ws.value);
+                console.log(`Browser websocket endpoint: ${ws.value}`)
+                await runBrowser(ws.value, info)
             }
-        });
+        })
 
     }).on("error", (err) => {
-        console.log(err.message);
-    });
+        console.log(err.message)
+    })
 }
 
-async function runBrowser(ws) {
+async function runBrowser(ws, info) {
     try {
-        const browser = await puppeteer.connect({ browserWSEndpoint: ws, defaultViewport: null });
-        const page = await browser.newPage();
-        await page.setDefaultNavigationTimeout(0);
+        const browser = await puppeteer.connect({ browserWSEndpoint: ws, defaultViewport: null })
+        const page = await browser.newPage()
+        await page.setDefaultNavigationTimeout(0)
         await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
         await checkLoginProgress(browser, page, info)
         return
     } catch (err) {
-        console.log(err.message);
+        console.log(err.message)
     }
 }
-
 
 async function checkLoginProgress(browser, page, info) {
     await page.waitForTimeout(10000)
