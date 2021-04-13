@@ -181,7 +181,7 @@ async function checkIp(ip, info) {
     }
     console.log("Save IP address: " + ip);
     infos[iNumCurrentAccount].ip = ip
-    fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
+    saveInfos()
 
     await sleep(1000);
     await startRegAccount(info)
@@ -292,10 +292,8 @@ async function loginEtsy(browser, page, info) {
 }
 
 async function registerShop(page, info) {
-    await page.goto('https://www.etsy.com/sell?ref=hdr-sell&from_page=https%3A%2F%2Fwww.etsy.com%2F')
-    await page.waitForTimeout(2000)
     await page.goto('https://www.etsy.com/your/shop/create?us_sell_create_value')
-
+    await page.waitForTimeout(2000)
     onNextStep(page, info)
 }
 
@@ -322,6 +320,9 @@ async function onNextStep(page, info) {
         var datetime = new Date();
         infos[iNumCurrentAccount].dayREG = datetime.toISOString().slice(0,10)
         infos[iNumCurrentAccount].status = "Success"
+        saveInfos()
+        forwardEmail(info)
+        return
         // iNumCurrentAccount++
         // await browser.close();
         // console.log("done!")
@@ -330,6 +331,19 @@ async function onNextStep(page, info) {
 
     await page.waitForTimeout(5000)
     await onNextStep(page, info)
+}
+
+async function forwardEmail(info){ 
+    const page2 = await browser.newPage();
+    await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop');
+    await page2.bringToFront();
+    await page2.waitForTimeout(10000)
+
+    await PuppUtils.click(page2, 'input[value="Add a forwarding address"]')
+    await page2.waitForTimeout(2000)
+    await PuppUtils.typeText(page, '[role="alertdialog"] input', info.forwardEmail)
+    await PuppUtils.click(page, '[role="alertdialog"] button[name="next"]')
+    
 }
 
 async function setupBilling(page, info){
@@ -389,7 +403,7 @@ async function checkStatusAccount(page) {
     console.log("checking StatusAccount")
     if ((await page.content()).includes('Your account is currently suspended')) {
         infos[iNumCurrentAccount].status = "Suspended"
-        fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
+        saveInfos()
         return Promise.resolve(true)
     } return Promise.resolve(false)
 }
@@ -473,6 +487,7 @@ async function generateShopName(page, info, reGen = false) {
 
         if (await PuppUtils.isElementVisbile(page, '#available[style="display: block;"]')) {
             console.log('Available', shopName)
+            infos[iNumCurrentAccount].nameShop = shopName
             saveInfos()
             return Promise.resolve()
         } else {
@@ -650,7 +665,7 @@ async function createNewListing(page, info) {
     })
     element = await page.$('#shipping_country [value="209"]')
     await element.click()
-    await PuppUtils.typeText(page, '#origin_postal_code', "10001")
+    await PuppUtils.typeText(page, '#origin_postal_code', "90001")
 
     await page.waitForTimeout(SLOW_MO)
     element = await page.$('#processing_time_select')
@@ -802,7 +817,6 @@ function getDateOfBirth(num, info) {
 }
 
 function saveInfos() {
-    infos[iNumCurrentAccount].nameShop = shopName
     fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
 }
 
