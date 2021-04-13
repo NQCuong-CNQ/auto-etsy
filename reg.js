@@ -9,6 +9,7 @@ const { nanoid } = require('nanoid')
 const { exec } = require('child_process');
 
 const SLOW_MO = 1000
+const mlaPort = 35000;
 var browser
 var storage
 var infos = []
@@ -51,7 +52,7 @@ async function main() {
     }
 }
 
-async function checkAccountValid(){
+async function checkAccountValid() {
     if (iNumCurrentAccount <= infos.length) {
         let info = infos[iNumCurrentAccount]
         console.log(info.mail)
@@ -106,26 +107,26 @@ async function changeIp(info) {
         });
     });
 }
-async function toggleCheckAPM(){
+async function toggleCheckAPM() {
     console.log("toggleCheckAPM")
-    exec('adb.exe shell settings get global airplane_mode_on', { cwd: './adb' }, async function(err, stdout, stderr) {
+    exec('adb.exe shell settings get global airplane_mode_on', { cwd: './adb' }, async function (err, stdout, stderr) {
         if (err) {
             console.error(err)
         } else {
-            if(stdout == 1){
+            if (stdout == 1) {
                 console.log("Retry turn off airplane mode!")
                 await toggleHome()
                 await toggleAPMSettings()
                 await toggleEnter()
                 await toggleHome()
-            }else{
+            } else {
                 console.log("Success!")
             }
         }
     })
     await sleep(1000)
 }
-async function toggleHome(){
+async function toggleHome() {
     exec('adb.exe shell input keyevent 3', { cwd: './adb' }, (err, stdout, stderr) => {
         if (err) {
             console.error(err)
@@ -134,7 +135,7 @@ async function toggleHome(){
     })
     await sleep(1000)
 }
-async function toggleTetherSettings(){
+async function toggleTetherSettings() {
     exec('adb.exe shell am start -n com.android.settings/.TetherSettings', { cwd: './adb' }, (err, stdout, stderr) => {
         if (err) {
             console.error(err)
@@ -143,7 +144,7 @@ async function toggleTetherSettings(){
     })
     await sleep(1000)
 }
-async function toggleAPMSettings(){
+async function toggleAPMSettings() {
     exec('adb.exe shell am start -a android.settings.AIRPLANE_MODE_SETTINGS', { cwd: './adb' }, (err, stdout, stderr) => {
         if (err) {
             console.error(err)
@@ -153,7 +154,7 @@ async function toggleAPMSettings(){
     await sleep(1000)
 }
 
-async function toggleEnter(){
+async function toggleEnter() {
     exec('adb.exe shell input keyevent 66', { cwd: './adb' }, (err, stdout, stderr) => {
         if (err) {
             console.error(err)
@@ -163,7 +164,7 @@ async function toggleEnter(){
     await sleep(3000)
 }
 
-async function toggleTab(){
+async function toggleTab() {
     exec('adb.exe shell input keyevent 61', { cwd: './adb' }, (err, stdout, stderr) => {
         if (err) {
             console.error(err)
@@ -195,28 +196,65 @@ function isIpExist(ip) {
     }
 }
 
+// async function startRegAccount(info) {
+//     browser = await puppeteer.launch({
+//         headless: false, defaultViewport: null, slowMo: 50,
+//         executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
+//         userDataDir: `./CR/${info.mail.trim().toLowerCase()}`,
+//         args: ['--no-sandbox', '--start-maximized']
+//     })
+//     const page = await browser.newPage()
+// }
+
 async function startRegAccount(info) {
-    browser = await puppeteer.launch({
-        headless: false, defaultViewport: null, slowMo: 50,
-        executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
-        userDataDir: `./CR/${info.mail.trim().toLowerCase()}`,
-        args: ['--no-sandbox', '--start-maximized']
-    })
-    const page = await browser.newPage()
-    await page.setDefaultNavigationTimeout(0); 
-    await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
-    await checkLoginProgress(browser, page, info)
-    return
+    let profileId = info.profileId;
+    http.get(`http://127.0.0.1:${mlaPort}/api/v1/profile/start?automation=true&puppeteer=true&profileId=${profileId}`, (resp) => {
+        let data = '';
+        let ws = '';
+
+        resp.on('data', (chunk) => {
+            data += chunk;
+        });
+
+        resp.on('end', () => {
+            try {
+                ws = JSON.parse(data);
+            } catch (err) {
+                console.log(err);
+            }
+            if (typeof ws === 'object' && ws.hasOwnProperty('value')) {
+                console.log(`Browser websocket endpoint: ${ws.value}`);
+                await runBrowser(ws.value);
+            }
+        });
+
+    }).on("error", (err) => {
+        console.log(err.message);
+    });
 }
 
-async function checkLoginProgress(browser, page, info){
+async function runBrowser(ws) {
+    try {
+        const browser = await puppeteer.connect({ browserWSEndpoint: ws, defaultViewport: null });
+        const page = await browser.newPage();
+        await page.setDefaultNavigationTimeout(0);
+        await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
+        await checkLoginProgress(browser, page, info)
+        return
+    } catch (err) {
+        console.log(err.message);
+    }
+}
+
+
+async function checkLoginProgress(browser, page, info) {
     await page.waitForTimeout(10000)
     if (page.url().includes('https://mail.google.com/mail/u/0/')) {
         await loginEtsy(browser, page, info)
         return
-    } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')){
+    } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')) {
         await addGoogleBirthday(page, info)
-    } else if (page.url().includes('https://gds.google.com/web/chip')){
+    } else if (page.url().includes('https://gds.google.com/web/chip')) {
         await addGoogleChip(page, info)
     } else {
         await loginGoogle(page, info)
@@ -225,20 +263,20 @@ async function checkLoginProgress(browser, page, info){
             await loginEtsy(browser, page, info)
         } else if (page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
             await confirmRecoveryOption(page)
-        } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')){
+        } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')) {
             await addGoogleBirthday(page, info)
-        } else if (page.url().includes('https://gds.google.com/web/chip')){
+        } else if (page.url().includes('https://gds.google.com/web/chip')) {
             await addGoogleChip(page)
         }
     }
     checkLoginProgress(browser, page, info)
 }
 
-async function addGoogleChip(page){
+async function addGoogleChip(page) {
     await PuppUtils.click(page, '//*[@id="yDmH0d"]/c-wiz/div/div/div/div[2]/div[4]/div[1]')
 }
 
-async function addGoogleBirthday(page, info){
+async function addGoogleBirthday(page, info) {
     await PuppUtils.typeText(page, 'input[placeholder="DD"]', getDateOfBirth(0, info))
 
     let element = await page.$(`div[role="combobox"]`)
@@ -276,14 +314,14 @@ async function loginEtsy(browser, page, info) {
     element = await page.$('.select-signin')
     await element.click()
     await page.waitForTimeout(5000)
-    
+
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     await PuppUtils.click(page, 'button[data-google-button="true"]')
     const newPage = await newPagePromise
 
     await page.waitForTimeout(8000)
     await PuppUtils.click(newPage, '[data-identifier]')
-    
+
     await page.waitForTimeout(15000)
     if (await PuppUtils.isElementVisbile(page, '[data-ge-nav-event-name="gnav_show_user_menu"]')) {
         await registerShop(page, info)
@@ -314,11 +352,11 @@ async function onNextStep(page, info) {
         await createNewListing(page, info)
     } else if (await PuppUtils.isElementVisbile(page, '[data-onboarding-step="get-paid"]')) {   // Step 3
         await submitBussinessInfo(page, info)
-    } else if (await PuppUtils.isElementVisbile(page, '[data-onboarding-step="setup-billing"]')){   // Step 4
+    } else if (await PuppUtils.isElementVisbile(page, '[data-onboarding-step="setup-billing"]')) {   // Step 4
         await setupBilling(page, info)
     } else if (page.url().includes('https://www.etsy.com/ca/shop/')) {
         var datetime = new Date();
-        infos[iNumCurrentAccount].dayREG = datetime.toISOString().slice(0,10)
+        infos[iNumCurrentAccount].dayREG = datetime.toISOString().slice(0, 10)
         infos[iNumCurrentAccount].status = "Success"
         saveInfos()
         forwardEmail(info)
@@ -333,7 +371,7 @@ async function onNextStep(page, info) {
     await onNextStep(page, info)
 }
 
-async function forwardEmail(info){ 
+async function forwardEmail(info) {
     const page2 = await browser.newPage();
     await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop');
     await page2.bringToFront();
@@ -343,10 +381,10 @@ async function forwardEmail(info){
     await page2.waitForTimeout(2000)
     await PuppUtils.typeText(page, '[role="alertdialog"] input', info.forwardEmail)
     await PuppUtils.click(page, '[role="alertdialog"] button[name="next"]')
-    
+
 }
 
-async function setupBilling(page, info){
+async function setupBilling(page, info) {
     await PuppUtils.typeText(page, '#billing-cc-num', getCreditCard(info.card, 0))
 
     await page.waitForTimeout(SLOW_MO)
@@ -371,7 +409,7 @@ async function setupBilling(page, info){
 
     await page.waitForTimeout(SLOW_MO)
     await PuppUtils.typeText(page, '#billing-cc-ccv', getCreditCard(info.card, 3))
-    await PuppUtils.typeText(page, '#billing-name', info.firstName + " "+ info.middleName + " "+ info.lastName)
+    await PuppUtils.typeText(page, '#billing-name', info.firstName + " " + info.middleName + " " + info.lastName)
     await PuppUtils.typeText(page, 'input[name="billing[address]"]', info.address)
     await PuppUtils.typeText(page, 'input[name="billing[city]"]', info.city)
 
@@ -388,12 +426,12 @@ async function setupBilling(page, info){
     await page.waitForTimeout(SLOW_MO)
     await PuppUtils.typeText(page, 'input[name="billing[zip]"]', info.zip)
     await page.waitForTimeout(SLOW_MO)
-    await PuppUtils.click(page, 'button[data-subway-final]') 
+    await PuppUtils.click(page, 'button[data-subway-final]')
 }
 
-function getCreditCard(card, num){
+function getCreditCard(card, num) {
     let crCard = card.trim().split("|")
-    if(num == 1){
+    if (num == 1) {
         return parseInt(crCard[num])
     }
     return crCard[num]
@@ -474,13 +512,13 @@ async function generateShopName(page, info, reGen = false) {
     try {
         let shopName = ""
         shopName = info.firstName + info.lastName + getDateOfBirth(0, info) + getDateOfBirth(1, info)
-        if(reGen) {
+        if (reGen) {
             shopName += nanoid(2)
         }
 
         await PuppUtils.typeText(page, '#onboarding-shop-name-input', shopName)
         await page.waitForTimeout(500)
-        if(!reGen){
+        if (!reGen) {
             await PuppUtils.click(page, '[data-action="check-availability"]')
             await page.waitForTimeout(2500)
         }
@@ -565,7 +603,7 @@ async function createNewListing(page, info) {
 
     await page.waitForTimeout(SLOW_MO)
     for (variationType in MUG_VARIATION) {
-        
+
         let element = await page.$(`[name="variation_property"]`)
         await element.click()
         await page.waitForTimeout(SLOW_MO)
@@ -740,7 +778,7 @@ async function submitBussinessInfo(page, info) {
     })
     element = await page.$('#identity-country-id [value="79"]')
     await element.click()
-    
+
     await page.waitForTimeout(SLOW_MO)
     await PuppUtils.typeText(page, "#identity-first-name", info.firstName)
     await PuppUtils.typeText(page, "#identity-last-name", info.lastName)
@@ -807,8 +845,8 @@ function getAddress(order, info) {
 
 function getDateOfBirth(num, info) {
     let dob = info.dob.trim().split("/")
-    if(num == 1){
-        if(dob[num].length == 1){
+    if (num == 1) {
+        if (dob[num].length == 1) {
             dob[num] = "0" + dob[num]
             return dob[num]
         }
