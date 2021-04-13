@@ -93,7 +93,14 @@ async function changeIp(info) {
     await toggleEnter()
     await toggleHome()
     await toggleCheckAPM()
-    //thieu buoc bạt lại
+    await toggleTetherSettings()
+    await toggleTab()
+    await toggleTab()
+    await toggleTab()
+    await toggleTab()
+    await toggleEnter()
+    await sleep(5000)
+    await toggleHome()
     console.log("Done!")
     await sleep(2000)
     var http = require('http')
@@ -172,7 +179,7 @@ async function toggleTab(){
         } else {
         }
     })
-    await sleep(1000)
+    await sleep(500)
 }
 
 async function checkIp(ip, info) {
@@ -208,7 +215,7 @@ async function startRegAccount(info) {
     await page.setDefaultNavigationTimeout(0); 
     await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
 
-    await page.waitForTimeout(15000)
+    await page.waitForTimeout(10000)
     if (page.url().includes('https://mail.google.com/mail/u/0/')) {
         await loginEtsy(browser, page, info)
     } else {
@@ -257,12 +264,17 @@ async function loginEtsy(browser, page, info) {
 
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     const newPage = await newPagePromise
-    await newPage.setDefaultNavigationTimeout(0); 
+
     console.log("cho")
     await page.waitForTimeout(8000)
     console.log("click")
-    await PuppUtils.click(newPage, `[data-identifier="${info.mail}"]`)
-
+    if (await PuppUtils.isElementVisbile(newPage, `[data-identifier="${info.mail}"]` || await PuppUtils.jsWaitForSelector(newPage, `[data-identifier="${info.mail}"]`, 1000))) {
+        await PuppUtils.click(newPage, `[data-identifier="${info.mail}"]`)
+    }else{
+        console.log("khong thay")
+        return
+    }
+    
     await page.waitForTimeout(5000)
     console.log("registerShop")
     if (await PuppUtils.isElementVisbile(page, '[aria-describedby="ge-tooltip-label-you-menu"]')) {
@@ -294,11 +306,9 @@ async function onNextStep(page, info) {
         await createNewListing(page, info)
     } else if (await PuppUtils.isElementVisbile(page, '[data-ui="business-or-individual"]')) {   // Step 3
         await submitBussinessInfo(page, info)
-    }else if (await PuppUtils.isElementVisbile(page, '[data-region="credit-card-row"]')){   // Step 4
+    } else if (await PuppUtils.isElementVisbile(page, '[data-region="credit-card-row"]')){   // Step 4
         await setupBilling(page, info)
-    }
-
-    else if (false) {
+    } else if (false) {
         iNumCurrentAccount++
         console.log("done!")
         await checkAccountValid()
