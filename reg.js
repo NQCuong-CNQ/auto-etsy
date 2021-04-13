@@ -82,13 +82,9 @@ async function changeIp(info) {
     await sleep(5000)
     await toggleHome()
     await toggleAPMSettings()
-    await toggleTab()
-    await toggleTab()
     await toggleEnter()
     await toggleHome()
     await toggleAPMSettings()
-    await toggleTab()
-    await toggleTab()
     await toggleEnter()
     await toggleHome()
     await toggleCheckAPM()
@@ -112,8 +108,6 @@ async function changeIp(info) {
 async function toggleCheckAPM(){
     console.log("toggleCheckAPM")
     exec('adb.exe shell settings get global airplane_mode_on', { cwd: './adb' }, async function(err, stdout, stderr) {
-        console.log(stdout)
-
         if (err) {
             console.error(err)
         } else {
@@ -121,8 +115,6 @@ async function toggleCheckAPM(){
                 console.log("Retry turn off airplane mode!")
                 await toggleHome()
                 await toggleAPMSettings()
-                await toggleTab()
-                await toggleTab()
                 await toggleEnter()
                 await toggleHome()
             }else{
@@ -257,24 +249,21 @@ async function loginEtsy(browser, page, info) {
 
     element = await page.$('.select-signin')
     await element.click()
-    await page.waitForTimeout(3000)
+    await page.waitForTimeout(5000)
     await PuppUtils.click(page, 'button[data-google-button="true"]')
 
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     const newPage = await newPagePromise
 
-    console.log("cho")
-    await page.waitForTimeout(8000)
-    console.log("click")
-    if (await PuppUtils.isElementVisbile(newPage, `[data-identifier="${info.mail}"]` || await PuppUtils.jsWaitForSelector(newPage, `[data-identifier="${info.mail}"]`, 1000))) {
-        await PuppUtils.click(newPage, `[data-identifier="${info.mail}"]`)
-    }else{
-        console.log("khong thay")
+    await page.waitForTimeout(6000)
+    if (await PuppUtils.isElementVisbile(newPage, `[data-identifier]`)) {
+        await PuppUtils.click(newPage, `[data-identifier]`)
+    } else{
+        console.log("Account not available")
         return
     }
     
-    await page.waitForTimeout(5000)
-    console.log("registerShop")
+    await page.waitForTimeout(10000)
     if (await PuppUtils.isElementVisbile(page, '[aria-describedby="ge-tooltip-label-you-menu"]')) {
         await registerShop(page, info)
         return
@@ -283,6 +272,7 @@ async function loginEtsy(browser, page, info) {
 
 async function registerShop(page, info) {
     await page.goto('https://www.etsy.com/sell?ref=hdr-sell&from_page=https%3A%2F%2Fwww.etsy.com%2F')
+    await page.waitForTimeout(2000)
     await page.goto('https://www.etsy.com/your/shop/create?us_sell_create_value')
 
     onNextStep(page, info)
@@ -308,6 +298,7 @@ async function onNextStep(page, info) {
         await setupBilling(page, info)
     } else if (false) {
         iNumCurrentAccount++
+        await browser.close();
         console.log("done!")
         await checkAccountValid()
     }
@@ -447,8 +438,11 @@ async function generateShopName(page, info, reGen = false) {
         }
 
         await PuppUtils.typeText(page, '#onboarding-shop-name-input', shopName)
-        await PuppUtils.click(page, '[data-action="check-availability"]')
-        await page.waitForTimeout(2000)
+        await page.waitForTimeout(500)
+        if(!reGen){
+            await PuppUtils.click(page, '[data-action="check-availability"]')
+            await page.waitForTimeout(2500)
+        }
 
         if (await PuppUtils.isElementVisbile(page, '#available[style="display: block;"]')) {
             console.log('Available', shopName)
@@ -770,9 +764,15 @@ function getAddress(order, info) {
     }
 }
 
-function getDateOfBirth(order, info) {
+function getDateOfBirth(num, info) {
     let dob = info.dob.trim().split("/")
-    return parseInt(dob[order])
+    if(num == 1){
+        if(dob[num].length == 1){
+            dob[num] = "0" + dob[num]
+            return dob[num]
+        }
+    }
+    return parseInt(dob[num])
 }
 
 function saveInfos() {
