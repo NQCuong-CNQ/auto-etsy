@@ -200,7 +200,7 @@ function isIpExist(ip) {
 async function startRegAccount(info) {
     let profileId = info.profileID
     console.log(profileId)
-    http.get(`http://127.0.0.1:${mlaPort}/api/v1/profile/start?automation=true&puppeteer=true&profileId=${profileId}`, async function(resp) {
+    http.get(`http://127.0.0.1:${mlaPort}/api/v1/profile/start?automation=true&puppeteer=true&profileId=${profileId}`, async function (resp) {
         let data = ''
         let ws = ''
 
@@ -208,7 +208,7 @@ async function startRegAccount(info) {
             data += chunk
         })
 
-        resp.on('end', async function() {
+        resp.on('end', async function () {
             try {
                 ws = JSON.parse(data)
             } catch (err) {
@@ -226,9 +226,18 @@ async function startRegAccount(info) {
 
 async function runBrowser(ws, info) {
     try {
-        browser = await puppeteer.connect({ browserWSEndpoint: ws, defaultViewport: null })
+        browser = await puppeteer.connect({
+            browserWSEndpoint: ws,
+            defaultViewport: null, args: [
+                '--no-sandbox',
+                '--disable-dev-shm-usage',
+            ],
+            slowMo: 50,
+        })
         const page = await browser.newPage()
+	await page.waitForTimeout(3000)
         await page.setDefaultNavigationTimeout(0)
+        await page.waitForTimeout(3000)
         await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
         await checkLoginProgress(page, info)
         return
@@ -241,11 +250,13 @@ async function checkLoginProgress(page, info) {
     await page.waitForTimeout(10000)
     if (page.url().includes('https://mail.google.com/mail/u/0/')) {
         await loginEtsy(page, info)
-        return
+	    return
     } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')) {
         await addGoogleBirthday(page, info)
     } else if (page.url().includes('https://gds.google.com/web/chip')) {
         await addGoogleChip(page, info)
+    } else if (page.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
+        await confirmRecoveryEmail(page, info)
     } else {
         await loginGoogle(page, info)
         await page.waitForTimeout(10000)
@@ -257,13 +268,22 @@ async function checkLoginProgress(page, info) {
             await addGoogleBirthday(page, info)
         } else if (page.url().includes('https://gds.google.com/web/chip')) {
             await addGoogleChip(page)
+        } else if (page.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
+            await confirmRecoveryEmail(page, info)
         }
     }
     checkLoginProgress(page, info)
 }
 
+async function confirmRecoveryEmail(page, info){
+    await PuppUtils.click(page, 'li:first-child')
+    await page.waitForTimeout(3000)
+    await PuppUtils.typeText(page, '#knowledge-preregistered-email-response', info.recoveryMail)
+    await PuppUtils.click(page, 'input[type="email"]')
+}
+
 async function addGoogleChip(page) {
-    await PuppUtils.click(page, '//*[@id="yDmH0d"]/c-wiz/div/div/div/div[2]/div[4]/div[1]')
+    await PuppUtils.click(page, $x('//*[@id="yDmH0d"]/c-wiz/div/div/div/div[2]/div[4]/div[1]'))
 }
 
 async function addGoogleBirthday(page, info) {
@@ -294,7 +314,6 @@ async function loginEtsy(page, info) {
     await page.goto('https://www.etsy.com')
     await page.waitForTimeout(5000)
     if (await PuppUtils.isElementVisbile(page, '.select-signin')) {
-
     } else {
         await registerShop(page, info)
         return
@@ -303,18 +322,22 @@ async function loginEtsy(page, info) {
 
     element = await page.$('.select-signin')
     await element.click()
-    await page.waitForTimeout(5000)
+    await page.waitForTimeout(10000)
 
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     await PuppUtils.click(page, 'button[data-google-button="true"]')
     const newPage = await newPagePromise
 
-    await page.waitForTimeout(8000)
+    await page.waitForTimeout(10000)
     await PuppUtils.click(newPage, '[data-identifier]')
 
-    await page.waitForTimeout(15000)
+    await page.waitForTimeout(20000)
     if (await PuppUtils.isElementVisbile(page, '[data-ge-nav-event-name="gnav_show_user_menu"]')) {
         await registerShop(page, info)
+        return
+    } else {
+	console.log("khong thay")
+	await registerShop(page, info)
         return
     }
 }
@@ -340,7 +363,7 @@ async function onNextStep(page, info) {
         await submitShopName(page, info)
     } else if (await PuppUtils.isElementVisbile(page, '[data-onboarding-step="list-items"]')) {   // Step 3
         await createNewListing(page, info)
-    } else if (await PuppUtils.isElementVisbile(page, '[data-onboarding-step="get-paid"]')) {   // Step 3
+    } else if (await PuppUtils.isElementVisbile(page, '[data-ui="bank-country-selection"]')) {   // Step 3
         await submitBussinessInfo(page, info)
     } else if (await PuppUtils.isElementVisbile(page, '[data-onboarding-step="setup-billing"]')) {   // Step 4
         await setupBilling(page, info)
@@ -349,7 +372,7 @@ async function onNextStep(page, info) {
         infos[iNumCurrentAccount].dayREG = datetime.toISOString().slice(0, 10)
         infos[iNumCurrentAccount].status = "Success"
         saveInfos()
-        forwardEmail(info)
+        await forwardEmail(info)
         iNumCurrentAccount++
         await browser.close();
         console.log("done!")
@@ -370,7 +393,7 @@ async function forwardEmail(info) {
     await PuppUtils.click(page2, 'input[value="Add a forwarding address"]')
     await page2.waitForTimeout(2000)
     await PuppUtils.typeText(page, '[role="alertdialog"] input', info.forwardEmail)
-    
+
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     await PuppUtils.click(page, '[role="alertdialog"] button[name="next"]')
     const newPage = await newPagePromise
@@ -385,14 +408,14 @@ async function forwardEmail(info) {
 
     await page.waitForTimeout(3000)
     await loginGoogle(page, info)
-    await page.waitForTimeout(10000)
+    await page.waitForTimeout(15000)
     codeForward = await page.evaluateHandle(() => {
         let index = 0
         let result = document.querySelectorAll('span[data-legacy-last-non-draft-message-id]')[index].innerHTML.trim().indexOf(`Gmail Forwarding Confirmation - Receive Mail from ${info.mail}`)
-        do{
-            index ++
+        do {
+            index++
             result = document.querySelectorAll('span[data-legacy-last-non-draft-message-id]')[index].innerHTML.trim().indexOf(`Gmail Forwarding Confirmation - Receive Mail from ${info.mail}`)
-        }while(result == -1)
+        } while (result == -1)
         return document.querySelectorAll('span[data-legacy-last-non-draft-message-id]')[index].innerHTML.trim()
     })
     await page.close();
@@ -402,7 +425,7 @@ async function forwardEmail(info) {
     await page.waitForTimeout(3000)
 }
 
-function getCodeForward(codeForward){
+function getCodeForward(codeForward) {
     return codeForward.split(")")[0].split("#")[1]
 }
 
@@ -448,7 +471,9 @@ async function setupBilling(page, info) {
     await page.waitForTimeout(SLOW_MO)
     await PuppUtils.typeText(page, 'input[name="billing[zip]"]', info.zip)
     await page.waitForTimeout(SLOW_MO)
-    await PuppUtils.click(page, 'button[data-subway-final]')
+    
+    await PuppUtils.waitNextUrl(page, 'button[data-subway-final]')
+    // await PuppUtils.click(page, 'button[data-subway-final]')
 }
 
 function getCreditCard(card, num) {
@@ -748,7 +773,7 @@ async function createNewListing(page, info) {
     })
     await element.click()
     await page.evaluate((element) => {
-        element.get(0).size = 1000
+        element.size = 1000
     }, element)
     element = await page.evaluateHandle(() => {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("United States")`).find('#shipping_carrier option[value="2"]')[0]
@@ -761,14 +786,15 @@ async function createNewListing(page, info) {
     })
     await element.click()
     await page.evaluate((element) => {
-        element.get(0).size = 1000
+        element.size = 1000
     }, element)
     element = await page.evaluateHandle(() => {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("United States")`).find('#charge_option option[value="fixed"]')[0]
     })
     await element.click()
     //Nhap Price one item
-    await page.waitForTimeout(SLOW_MO)
+    await page.waitForTimeout(3000)
+    console.log('evaluate')
     element = await page.evaluateHandle(() => {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("United States")`).find('label:contains("One item")').parent().find('input')[0]
     })
@@ -786,7 +812,7 @@ async function createNewListing(page, info) {
     })
     await element.click()
     await page.evaluate((element) => {
-        element.get(0).size = 1000
+        element.size = 1000
     }, element)
     element = await page.evaluateHandle(() => {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Everywhere else")`).find('#shipping_carrier option[value="2"]')[0]
@@ -799,14 +825,14 @@ async function createNewListing(page, info) {
     })
     await element.click()
     await page.evaluate((element) => {
-        element.get(0).size = 1000
+        element.size = 1000
     }, element)
     element = await page.evaluateHandle(() => {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Everywhere else")`).find('#charge_option option[value="fixed"]')[0]
     })
     await element.click()
     //Nhap Price one item
-    await page.waitForTimeout(SLOW_MO)
+    await page.waitForTimeout(3000)
     element = await page.evaluateHandle(() => {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Everywhere else")`).find('label:contains("One item")').parent().find('input')[0]
     })
@@ -850,9 +876,9 @@ async function createNewListing(page, info) {
 async function submitBussinessInfo(page, info) {
     await page.waitForTimeout(4000)
     await page.evaluate(() => {
-        element = document.querySelector('#bank-country-id');
+        element = document.querySelector('#bank-country-id')
         if (element) {
-            element.scrollTop = element.offsetHeight;
+            element.scrollTop = element.offsetHeight
             console.error(`Scrolled to selector}`)
         } else {
             console.error(`cannot find selector`)
@@ -964,6 +990,12 @@ function getDateOfBirth(num, info) {
             return dob[num]
         }
     }
+    if (num == 2) {
+        if (dob[num].length == 2) {
+            dob[num] = "19" + dob[num]
+            return dob[num]
+        }
+    }
     return parseInt(dob[num])
 }
 
@@ -972,5 +1004,5 @@ function saveInfos() {
 }
 
 async function confirmRecoveryOption(page) {
-    await PuppUtils.click(page, '//*[@id="yDmH0d"]/c-wiz[2]/c-wiz/div/div[1]/div/div/div/div[2]/div[3]/div/div[2]/div')
+    await PuppUtils.click(page, $x('//*[@id="yDmH0d"]/c-wiz[2]/c-wiz/div/div[1]/div/div/div/div[2]/div[3]/div/div[2]/div'))
 }
