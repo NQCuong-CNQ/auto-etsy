@@ -350,11 +350,11 @@ async function onNextStep(page, info) {
         infos[iNumCurrentAccount].status = "Success"
         saveInfos()
         forwardEmail(info)
+        iNumCurrentAccount++
+        await browser.close();
+        console.log("done!")
+        await checkAccountValid()
         return
-        // iNumCurrentAccount++
-        // await browser.close();
-        // console.log("done!")
-        // await checkAccountValid()
     }
 
     await page.waitForTimeout(5000)
@@ -362,16 +362,48 @@ async function onNextStep(page, info) {
 }
 
 async function forwardEmail(info) {
-    const page2 = await browser.newPage();
-    await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop');
-    await page2.bringToFront();
+    const page2 = await browser.newPage()
+    await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop')
+    await page2.bringToFront()
     await page2.waitForTimeout(10000)
 
     await PuppUtils.click(page2, 'input[value="Add a forwarding address"]')
     await page2.waitForTimeout(2000)
     await PuppUtils.typeText(page, '[role="alertdialog"] input', info.forwardEmail)
+    
+    const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     await PuppUtils.click(page, '[role="alertdialog"] button[name="next"]')
+    const newPage = await newPagePromise
 
+    await newPage.waitForTimeout(3000)
+    await PuppUtils.click(newPage, 'form input[value="Proceed"]')
+
+    await page.waitForTimeout(3000)
+    await PuppUtils.click(page, 'button[name="ok"]')
+    await page.waitForTimeout(2000)
+    await page.goto('https://accounts.google.com/AddSession?hl=en&continue=https://mail.google.com/mail&service=mail&ec=GAlAFw')
+
+    await page.waitForTimeout(3000)
+    await loginGoogle(page, info)
+    await page.waitForTimeout(10000)
+    codeForward = await page.evaluateHandle(() => {
+        let index = 0
+        let result = document.querySelectorAll('span[data-legacy-last-non-draft-message-id]')[index].innerHTML.trim().indexOf(`Gmail Forwarding Confirmation - Receive Mail from ${info.mail}`)
+        do{
+            index ++
+            result = document.querySelectorAll('span[data-legacy-last-non-draft-message-id]')[index].innerHTML.trim().indexOf(`Gmail Forwarding Confirmation - Receive Mail from ${info.mail}`)
+        }while(result == -1)
+        return document.querySelectorAll('span[data-legacy-last-non-draft-message-id]')[index].innerHTML.trim()
+    })
+    await page.close();
+
+    await PuppUtils.typeText(page, 'input[act="verifyText"]', getCodeForward(codeForward))
+    await PuppUtils.click(page, 'input[value="Verify"]')
+    await page.waitForTimeout(3000)
+}
+
+function getCodeForward(codeForward){
+    return codeForward.split(")")[0].split("#")[1]
 }
 
 async function setupBilling(page, info) {
