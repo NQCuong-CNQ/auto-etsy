@@ -63,8 +63,8 @@ async function checkAccountValid() {
             checkAccountValid()
             return
         }
-        //await changeIp(info)
-        await startRegAccount(info)
+        await changeIp(info)
+        // await startRegAccount(info)
     }
 }
 
@@ -234,10 +234,10 @@ async function runBrowser(ws, info) {
             ],
             slowMo: 50,
         })
+        sleep(2000)
         const page = await browser.newPage()
-	await page.waitForTimeout(3000)
+	    await page.waitForTimeout(3000)
         await page.setDefaultNavigationTimeout(0)
-        await page.waitForTimeout(3000)
         await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
         await checkLoginProgress(page, info)
         return
@@ -247,33 +247,32 @@ async function runBrowser(ws, info) {
 }
 
 async function checkLoginProgress(page, info) {
-    await forwardEmail(info, page)
-    // await page.waitForTimeout(10000)
-    // if (page.url().includes('/#inbox')) {
-    //     await loginEtsy(page, info)
-	//     return
-    // } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')) {
-    //     await addGoogleBirthday(page, info)
-    // } else if (page.url().includes('https://gds.google.com/web/chip')) {
-    //     await addGoogleChip(page, info)
-    // } else if (page.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
-    //     await confirmRecoveryEmail(page, info)
-    // } else {
-    //     await loginGoogle(page, info)
-    //     await page.waitForTimeout(10000)
-    //     if (page.url().includes('https://mail.google.com/mail/u/0/')) {
-    //         await loginEtsy(page, info)
-    //     } else if (page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
-    //         await confirmRecoveryOption(page)
-    //     } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')) {
-    //         await addGoogleBirthday(page, info)
-    //     } else if (page.url().includes('https://gds.google.com/web/chip')) {
-    //         await addGoogleChip(page)
-    //     } else if (page.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
-    //         await confirmRecoveryEmail(page, info)
-    //     }
-    // }
-    // checkLoginProgress(page, info)
+    await page.waitForTimeout(10000)
+    if (page.url().includes('/#inbox')) {
+        await loginEtsy(page, info)
+	    return
+    } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')) {
+        await addGoogleBirthday(page, info)
+    } else if (page.url().includes('https://gds.google.com/web/chip')) {
+        await addGoogleChip(page, info)
+    } else if (page.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
+        await confirmRecoveryEmail(page, info)
+    } else {
+        await loginGoogle(page, info)
+        await page.waitForTimeout(10000)
+        if (page.url().includes('https://mail.google.com/mail/u/0/')) {
+            await loginEtsy(page, info)
+        } else if (page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
+            await confirmRecoveryOption(page)
+        } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')) {
+            await addGoogleBirthday(page, info)
+        } else if (page.url().includes('https://gds.google.com/web/chip')) {
+            await addGoogleChip(page)
+        } else if (page.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
+            await confirmRecoveryEmail(page, info)
+        }
+    }
+    checkLoginProgress(page, info)
 }
 
 async function confirmRecoveryEmail(page, info){
@@ -373,7 +372,7 @@ async function onNextStep(page, info) {
         infos[iNumCurrentAccount].dayREG = datetime.toISOString().slice(0, 10)
         infos[iNumCurrentAccount].status = "Success"
         saveInfos()
-        await forwardEmail(info, page)
+        await forwardEmail(info)
         iNumCurrentAccount++
         await browser.close();
         console.log("done!")
@@ -385,39 +384,38 @@ async function onNextStep(page, info) {
     await onNextStep(page, info)
 }
 
-async function forwardEmail(info, page) {
+async function forwardEmail(info) {
     const page2 = await browser.newPage()
-    await page2.goto('https://mail.google.com/mail/u/1')
-    // await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop')
-    // await page2.bringToFront()
-    // await page2.waitForTimeout(10000)
+    await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop')
+    await page2.bringToFront()
+    await page2.waitForTimeout(10000)
 
-    // await PuppUtils.click(page2, 'input[value="Add a forwarding address"]')
-    // await page2.waitForTimeout(2000)
-    // await PuppUtils.typeText(page2, '[role="alertdialog"] input', info.forwardEmail)
+    await PuppUtils.click(page2, 'input[value="Add a forwarding address"]')
+    await page2.waitForTimeout(2000)
+    await PuppUtils.typeText(page2, '[role="alertdialog"] input', info.forwardEmail)
 
-    // const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
-    // await PuppUtils.click(page2, '[role="alertdialog"] button[name="next"]')
-    // const newPage = await newPagePromise
+    const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
+    await PuppUtils.click(page2, '[role="alertdialog"] button[name="next"]')
+    const newPage = await newPagePromise
 
-    // await newPage.waitForTimeout(3000)
-    // await PuppUtils.click(newPage, 'form input[value="Proceed"]')
+    await newPage.waitForTimeout(3000)
+    await PuppUtils.click(newPage, 'form input[value="Proceed"]')
 
-    // await page2.waitForTimeout(3000)
-    // await PuppUtils.click(page2, 'button[name="ok"]')
-    // await page2.waitForTimeout(2000)
-    // await page2.goto('https://accounts.google.com/AddSession?hl=en&continue=https://mail.google.com/mail&service=mail&ec=GAlAFw')
+    await page2.waitForTimeout(3000)
+    await PuppUtils.click(page2, 'button[name="ok"]')
+    await page2.waitForTimeout(2000)
+    await page2.goto('https://accounts.google.com/AddSession?hl=en&continue=https://mail.google.com/mail&service=mail&ec=GAlAFw')
 
     await page2.waitForTimeout(3000)
 
-    // await PuppUtils.typeText(page2, '#identifierId', info.forwardEmail.trim().toLowerCase())
-    // await PuppUtils.waitNextUrl(page2, '#identifierNext')
-    // await PuppUtils.jsWaitForSelector(page2, '[name="password"]', 4000)
-    // await page2.waitForTimeout(5000)
-    // await PuppUtils.typeText(page2, '[name="password"]', info.passForward.trim())
-    // await PuppUtils.waitNextUrl(page2, '#passwordNext')
+    await PuppUtils.typeText(page2, '#identifierId', info.forwardEmail.trim().toLowerCase())
+    await PuppUtils.waitNextUrl(page2, '#identifierNext')
+    await PuppUtils.jsWaitForSelector(page2, '[name="password"]', 4000)
+    await page2.waitForTimeout(5000)
+    await PuppUtils.typeText(page2, '[name="password"]', info.passForward.trim())
+    await PuppUtils.waitNextUrl(page2, '#passwordNext')
 
-    // await page2.waitForTimeout(15000)
+    await page2.waitForTimeout(15000)
     codeForward = await page2.evaluateHandle((info) => {
         let index = 0
         let result = document.querySelectorAll('span[data-legacy-last-non-draft-message-id]')[index].innerHTML.trim().indexOf(`Gmail Forwarding Confirmation - Receive Mail from ${info.mail}`)
@@ -425,16 +423,20 @@ async function forwardEmail(info, page) {
             index++
             result = document.querySelectorAll('span[data-legacy-last-non-draft-message-id]')[index].innerHTML.trim().indexOf(`Gmail Forwarding Confirmation - Receive Mail from ${info.mail}`)
         } while (result == -1)
-        return document.querySelectorAll('span[data-legacy-last-non-draft-message-id]')[index].innerHTML.trim()
+        return document.querySelectorAll('span[data-legacy-last-non-draft-message-id]')[index]
     }, info)
 
-    console.log(codeForward.jsonValue().get(0))
+    let res = await (await codeForward.getProperty('innerHTML')).jsonValue()
     await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop')
     await page2.bringToFront()
     await page2.waitForTimeout(10000)
 
-    await PuppUtils.typeText(page2, 'input[act="verifyText"]', getCodeForward(codeForward.jsonValue().Promise))
+    await PuppUtils.typeText(page2, 'input[act="verifyText"]', getCodeForward(res))
     await PuppUtils.click(page2, 'input[value="Verify"]')
+    await page2.waitForTimeout(SLOW_MO)
+    await PuppUtils.click(page2, 'input[value="1"]:first-child')
+    await page2.waitForTimeout(SLOW_MO)
+    await PuppUtils.click(page2, '[guidedhelpid="save_changes_button"]')
     await page2.waitForTimeout(3000)
 }
 
@@ -486,7 +488,6 @@ async function setupBilling(page, info) {
     await page.waitForTimeout(SLOW_MO)
     
     await PuppUtils.waitNextUrl(page, 'button[data-subway-final]')
-    // await PuppUtils.click(page, 'button[data-subway-final]')
 }
 
 function getCreditCard(card, num) {
