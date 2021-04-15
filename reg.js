@@ -305,9 +305,12 @@ async function addGoogleBirthday(page, info) {
 
     for (let i = 0; i < parseInt(getDateOfBirth(0, info)); i++) {
         await page.keyboard.press('ArrowDown', 500)
-    } await page.keyboard.press('Enter', 500)
+    } await page.keyboard.press('Enter', 500)   
 
-    await PuppUtils.typeText(page, 'input[placeholder="YYYY"]', getDateOfBirth(2, info).toString())
+    await PuppUtils.typeText(page, 'input[placeholder="YYYY"]', getDateOfBirth(2, info).toString())    
+    await page.waitForTimeout(2000)
+    await PuppUtils.click(page, 'data-mdc-dialog-action="ok"')
+    await page.waitForTimeout(SLOW_MO)
     await PuppUtils.click(page, 'button:first-child')
 }
 
@@ -430,7 +433,7 @@ async function forwardEmail(info) {
         await PuppUtils.click(page2, 'li:first-child')
         await page2.waitForTimeout(3000)
         await PuppUtils.typeText(page2, '#knowledge-preregistered-email-response', info.recoveryForwardMail)
-        await PuppUtils.click(page, 'button[type="button"]:first-child')
+        await PuppUtils.click(page2, 'button[type="button"]:first-child')
     }
 
     await page2.waitForTimeout(15000)
