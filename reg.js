@@ -297,17 +297,17 @@ async function addGoogleChip(page) {
 }
 
 async function addGoogleBirthday(page, info) {
-    await PuppUtils.typeText(page, 'input[placeholder="DD"]', getDateOfBirth(0, info).toString())
+    await PuppUtils.typeText(page, 'input[placeholder="DD"]', getDateOfBirth(1, info).toString())
 
     let element = await page.$(`div[role="combobox"]`)
     await element.click()
     await page.waitForTimeout(SLOW_MO)
 
-    for (let i = 0; i < parseInt(getDateOfBirth(1, info)); i++) {
+    for (let i = 0; i < parseInt(getDateOfBirth(0, info)); i++) {
         await page.keyboard.press('ArrowDown', 500)
     } await page.keyboard.press('Enter', 500)
 
-    await PuppUtils.typeText(page, 'input[placeholder="YYYY"]', getDateOfBirth(0, info).toString())
+    await PuppUtils.typeText(page, 'input[placeholder="YYYY"]', getDateOfBirth(2, info).toString())
     await PuppUtils.click(page, 'button:first-child')
 }
 
@@ -398,7 +398,7 @@ async function forwardEmail(info) {
     const page2 = await browser.newPage()
     await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop')
     await page2.bringToFront()
-    await page2.waitForTimeout(12000)
+    await page2.waitForTimeout(15000)
 
     await PuppUtils.click(page2, 'input[value="Add a forwarding address"]')
     await page2.waitForTimeout(2000)
@@ -426,14 +426,14 @@ async function forwardEmail(info) {
     await PuppUtils.click(page2, '#passwordNext')
 
     await page2.waitForTimeout(3000)
-    if (page2.url.includes('https://accounts.google.com/signin/v2/challenge/selection')) {
+    if (page2.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
         await PuppUtils.click(page2, 'li:first-child')
         await page2.waitForTimeout(3000)
         await PuppUtils.typeText(page2, '#knowledge-preregistered-email-response', info.recoveryForwardMail)
         await PuppUtils.click(page, 'button[type="button"]:first-child')
     }
 
-    await page2.waitForTimeout(10000)
+    await page2.waitForTimeout(15000)
     codeForward = await page2.evaluateHandle((info) => {
         let index = 0
         let result = document.querySelectorAll('span[data-legacy-last-non-draft-message-id]')[index].innerHTML.trim().indexOf(`Gmail Forwarding Confirmation - Receive Mail from ${info.mail}`)
@@ -451,9 +451,9 @@ async function forwardEmail(info) {
 
     await PuppUtils.typeText(page2, 'input[act="verifyText"]', getCodeForward(res))
     await PuppUtils.click(page2, 'input[value="Verify"]')
-    await page2.waitForTimeout(SLOW_MO)
+    await page2.waitForTimeout(2000)
     await PuppUtils.click(page2, 'input[value="1"]:first-child')
-    await page2.waitForTimeout(SLOW_MO)
+    await page2.waitForTimeout(1000)
     await PuppUtils.click(page2, '[guidedhelpid="save_changes_button"]')
     await page2.waitForTimeout(3000)
 }
@@ -813,7 +813,7 @@ async function createNewListing(page, info) {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("United States")`).find('#shipping_carrier option[value="2"]')[0]
     })
     await element.click()
-    console.log('0')
+
     //Chon fix price shipping
     await page.waitForTimeout(SLOW_MO)
     element = await page.evaluateHandle(() => {
