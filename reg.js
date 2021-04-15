@@ -263,6 +263,10 @@ async function checkLoginProgress(page, info) {
         await loginGoogle(page, info)
         await page.waitForTimeout(10000)
         if (page.url().includes('https://mail.google.com/mail/u/')) {
+            if(await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')){
+                await PuppUtils.click(page, '.T-I.T-I-JN:last-child')
+                await page.waitForTimeout(SLOW_MO)
+            }
             await loginEtsy(page, info)
         } else if (page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
             await confirmRecoveryOption(page)
