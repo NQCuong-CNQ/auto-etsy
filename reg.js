@@ -926,7 +926,7 @@ async function submitBussinessInfo(page, info) {
 
     await page.waitForTimeout(SLOW_MO)
     await PuppUtils.typeText(page, "#bank-name-on-account", info.firstName + " " + info.middleName + " " + info.lastName)
-    await PuppUtils.typeText(page, "#bank-routing-number", info.rountingNumber)
+    await PuppUtils.typeText(page, "#bank-routing-number", getRoutingNumber(info))
     await PuppUtils.typeText(page, "#bank-account-number", info.accountNumber)
 
     await page.evaluate(() => {
@@ -997,6 +997,12 @@ async function submitBussinessInfo(page, info) {
     await PuppUtils.typeText(page, '.address-container input[name="zip"]', info.zip)
     await PuppUtils.typeText(page, '.address-container input[name="phone"]', info.phone)
     await PuppUtils.click(page, 'button[data-ui="dc-submit"]')
+}
+
+function getRoutingNumber(info){
+    if(info.routingNumber.length == 8){
+        return "0" + info.routingNumber
+    }return info.routingNumber
 }
 
 function getAddress(order, info) {
