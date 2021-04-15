@@ -230,13 +230,13 @@ async function startRegAccount(info) {
 
 async function runBrowser(ws, info) {
     try {
-        sleep(10000)
+        sleep(15000)
         browser = await puppeteer.connect({
             browserWSEndpoint: ws,
             defaultViewport: null,
             slowMo: 50,
         })
-        sleep(SLOW_MO)
+        sleep(3000)
         const page = await browser.newPage()
         await page.waitForTimeout(SLOW_MO)
         await page.setDefaultNavigationTimeout(0)
@@ -309,7 +309,7 @@ async function addGoogleBirthday(page, info) {
 
     await PuppUtils.typeText(page, 'input[placeholder="YYYY"]', getDateOfBirth(2, info).toString())    
     await page.waitForTimeout(2000)
-    await PuppUtils.click(page, 'data-mdc-dialog-action="ok"')
+    await PuppUtils.click(page, '[data-mdc-dialog-action="ok"]')
     await page.waitForTimeout(SLOW_MO)
     await PuppUtils.click(page, 'button:first-child')
 }
