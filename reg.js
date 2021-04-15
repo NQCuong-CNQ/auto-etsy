@@ -199,7 +199,7 @@ function isIpExist(ip) {
 
 async function startRegAccount(info) {
     let profileId = info.profileID
-    console.log(profileId)
+    console.log('profileId: ' + profileId)
     http.get(`http://127.0.0.1:${mlaPort}/api/v1/profile/start?automation=true&puppeteer=true&profileId=${profileId}`, async function (resp) {
         let data = ''
         let ws = ''
@@ -226,7 +226,7 @@ async function startRegAccount(info) {
 
 async function runBrowser(ws, info) {
     try {
-	sleep(3000)
+        sleep(3000)
         browser = await puppeteer.connect({
             browserWSEndpoint: ws,
             defaultViewport: null,
@@ -234,7 +234,7 @@ async function runBrowser(ws, info) {
         })
         sleep(5000)
         const page = await browser.newPage()
-	    await page.waitForTimeout(1000)
+        await page.waitForTimeout(1000)
         await page.setDefaultNavigationTimeout(0)
         await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
         await checkLoginProgress(page, info)
@@ -248,7 +248,7 @@ async function checkLoginProgress(page, info) {
     await page.waitForTimeout(10000)
     if (page.url().includes('/#inbox')) {
         await loginEtsy(page, info)
-	    return
+        return
     } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')) {
         await addGoogleBirthday(page, info)
     } else if (page.url().includes('https://gds.google.com/web/chip')) {
@@ -273,7 +273,7 @@ async function checkLoginProgress(page, info) {
     checkLoginProgress(page, info)
 }
 
-async function confirmRecoveryEmail(page, info){
+async function confirmRecoveryEmail(page, info) {
     await PuppUtils.click(page, 'li:first-child')
     await page.waitForTimeout(3000)
     await PuppUtils.typeText(page, '#knowledge-preregistered-email-response', info.recoveryMail)
@@ -290,13 +290,13 @@ async function addGoogleBirthday(page, info) {
     let element = await page.$(`div[role="combobox"]`)
     await element.click()
     await page.waitForTimeout(SLOW_MO)
-    await page.evaluate(() => {
-        $(`div[role="combobox"]`).get(0).size = 1000
-    })
-    element = await page.$(`li[data-value="${parseInt(getDateOfBirth(1, info))}"]`)
-    await element.click()
+
+    for (let i = 0; i < parseInt(getDateOfBirth(1, info)); i++) {
+        await page.keyboard.press('ArrowDown', 500)
+    } await page.keyboard.press('Enter', 500)
 
     await PuppUtils.typeText(page, 'input[placeholder="YYYY"]', getDateOfBirth(0, info).toString())
+    await PuppUtils.click(page, 'button:first-child')
 }
 
 async function loginGoogle(page, info) {
@@ -334,8 +334,8 @@ async function loginEtsy(page, info) {
         await registerShop(page, info)
         return
     } else {
-	console.log("khong thay")
-	await registerShop(page, info)
+        console.log("khong thay")
+        await registerShop(page, info)
         return
     }
 }
@@ -414,12 +414,12 @@ async function forwardEmail(info) {
     await PuppUtils.waitNextUrl(page2, '#passwordNext')
 
     await page2.waitForTimeout(3000)
-    if(page2.url.includes('https://accounts.google.com/signin/v2/challenge/selection')){
+    if (page2.url.includes('https://accounts.google.com/signin/v2/challenge/selection')) {
         await PuppUtils.click(page2, 'li:first-child')
         await page2.waitForTimeout(3000)
         await PuppUtils.typeText(page2, '#knowledge-preregistered-email-response', info.recoveryForwardMail)
         await PuppUtils.click(page, 'button[type="button"]:first-child')
-    } 
+    }
 
     await page2.waitForTimeout(10000)
     codeForward = await page2.evaluateHandle((info) => {
@@ -492,7 +492,7 @@ async function setupBilling(page, info) {
     await page.waitForTimeout(SLOW_MO)
     await PuppUtils.typeText(page, 'input[name="billing[zip]"]', info.zip)
     await page.waitForTimeout(SLOW_MO)
-    
+
     await PuppUtils.waitNextUrl(page, 'button[data-subway-final]')
 }
 
@@ -768,8 +768,10 @@ async function createNewListing(page, info) {
     await page.evaluate(() => {
         $(`#shipping_country`).get(0).size = 1000
     })
+    await page.waitForTimeout(SLOW_MO)
     element = await page.$('#shipping_country [value="209"]')
     await element.click()
+    await page.waitForTimeout(SLOW_MO)
     await PuppUtils.typeText(page, '#origin_postal_code', "90001")
 
     await page.waitForTimeout(SLOW_MO)
@@ -813,7 +815,6 @@ async function createNewListing(page, info) {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("United States")`).find('#charge_option option[value="fixed"]')[0]
     })
     await element.click()
-    console.log('1')
     //Nhap Price one item
     // await page.waitForTimeout(3000)
     // console.log('evaluate')
@@ -840,7 +841,6 @@ async function createNewListing(page, info) {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Everywhere else")`).find('#shipping_carrier option[value="2"]')[0]
     })
     await element.click()
-    console.log('2')
     //Chon fix price shipping
     await page.waitForTimeout(SLOW_MO)
     element = await page.evaluateHandle(() => {
@@ -854,7 +854,6 @@ async function createNewListing(page, info) {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Everywhere else")`).find('#charge_option option[value="fixed"]')[0]
     })
     await element.click()
-    console.log('3')
     //Nhap Price one item
     // await page.waitForTimeout(3000)
     // element = await page.evaluateHandle(() => {
@@ -873,7 +872,6 @@ async function createNewListing(page, info) {
     //     return $(`button:contains("Save as a shipping profile")`)[0]
     // })
     await PuppUtils.click(page, '[data-region="shipping-profiles"] button.wt-btn--outline')
-    console.log('4')
     // await page.waitForTimeout(5000)
     // element = await page.evaluateHandle(() => {
     //     return $(`button:contains("Confirm")`)[0]
