@@ -181,11 +181,11 @@ async function checkIp(ip, info) {
         await changeIp(ip, info)
         return
     }
-    if(ip.length < 20){
+    if (ip.length < 20) {
         console.log("Save IP address: " + ip);
         infos[iNumCurrentAccount].ip = ip
         saveInfos()
-    }else{
+    } else {
         console.log("get Ip addr failed!")
     }
 
@@ -230,15 +230,15 @@ async function startRegAccount(info) {
 
 async function runBrowser(ws, info) {
     try {
-        sleep(3000)
+        sleep(10000)
         browser = await puppeteer.connect({
             browserWSEndpoint: ws,
             defaultViewport: null,
             slowMo: 50,
         })
-        sleep(5000)
+        sleep(SLOW_MO)
         const page = await browser.newPage()
-        await page.waitForTimeout(1000)
+        await page.waitForTimeout(SLOW_MO)
         await page.setDefaultNavigationTimeout(0)
         await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
         await checkLoginProgress(page, info)
@@ -251,7 +251,7 @@ async function runBrowser(ws, info) {
 async function checkLoginProgress(page, info) {
     await page.waitForTimeout(10000)
     if (page.url().includes('https://mail.google.com/mail/u/')) {
-        if(await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')){
+        if (await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')) {
             await PuppUtils.click(page, '.T-I.T-I-JN:last-child')
             await page.waitForTimeout(SLOW_MO)
         }
@@ -267,7 +267,7 @@ async function checkLoginProgress(page, info) {
         await loginGoogle(page, info)
         await page.waitForTimeout(10000)
         if (page.url().includes('https://mail.google.com/mail/u/')) {
-            if(await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')){
+            if (await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')) {
                 await PuppUtils.click(page, '.T-I.T-I-JN:last-child')
                 await page.waitForTimeout(SLOW_MO)
             }
@@ -1003,10 +1003,10 @@ async function submitBussinessInfo(page, info) {
     await PuppUtils.click(page, 'button[data-ui="dc-submit"]')
 }
 
-function getRoutingNumber(info){
-    if(info.routingNumber.length == 8){
+function getRoutingNumber(info) {
+    if (info.routingNumber.length == 8) {
         return "0" + info.routingNumber
-    }return info.routingNumber
+    } return info.routingNumber
 }
 
 function getAddress(order, info) {
