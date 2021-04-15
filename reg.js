@@ -10,7 +10,7 @@ const { exec } = require('child_process')
 const http = require('http')
 
 const SLOW_MO = 1000
-const mlaPort = 35000;
+const mlaPort = 35000
 var browser
 var storage
 var infos = []
@@ -226,17 +226,15 @@ async function startRegAccount(info) {
 
 async function runBrowser(ws, info) {
     try {
+	sleep(3000)
         browser = await puppeteer.connect({
             browserWSEndpoint: ws,
-            defaultViewport: null, args: [
-                '--no-sandbox',
-                '--disable-dev-shm-usage',
-            ],
+            defaultViewport: null,
             slowMo: 50,
         })
-        sleep(2000)
+        sleep(5000)
         const page = await browser.newPage()
-	    await page.waitForTimeout(3000)
+	    await page.waitForTimeout(1000)
         await page.setDefaultNavigationTimeout(0)
         await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
         await checkLoginProgress(page, info)
@@ -279,7 +277,7 @@ async function confirmRecoveryEmail(page, info){
     await PuppUtils.click(page, 'li:first-child')
     await page.waitForTimeout(3000)
     await PuppUtils.typeText(page, '#knowledge-preregistered-email-response', info.recoveryMail)
-    await PuppUtils.click(page, 'input[type="email"]')
+    await PuppUtils.click(page, 'button[type="button"]:first-child')
 }
 
 async function addGoogleChip(page) {
@@ -287,7 +285,7 @@ async function addGoogleChip(page) {
 }
 
 async function addGoogleBirthday(page, info) {
-    await PuppUtils.typeText(page, 'input[placeholder="DD"]', getDateOfBirth(0, info))
+    await PuppUtils.typeText(page, 'input[placeholder="DD"]', getDateOfBirth(0, info).toString())
 
     let element = await page.$(`div[role="combobox"]`)
     await element.click()
@@ -298,7 +296,7 @@ async function addGoogleBirthday(page, info) {
     element = await page.$(`li[data-value="${parseInt(getDateOfBirth(1, info))}"]`)
     await element.click()
 
-    await PuppUtils.typeText(page, 'input[placeholder="YYYY"]', getDateOfBirth(0, info))
+    await PuppUtils.typeText(page, 'input[placeholder="YYYY"]', getDateOfBirth(0, info).toString())
 }
 
 async function loginGoogle(page, info) {
@@ -388,7 +386,7 @@ async function forwardEmail(info) {
     const page2 = await browser.newPage()
     await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop')
     await page2.bringToFront()
-    await page2.waitForTimeout(10000)
+    await page2.waitForTimeout(12000)
 
     await PuppUtils.click(page2, 'input[value="Add a forwarding address"]')
     await page2.waitForTimeout(2000)
@@ -415,7 +413,15 @@ async function forwardEmail(info) {
     await PuppUtils.typeText(page2, '[name="password"]', info.passForward.trim())
     await PuppUtils.waitNextUrl(page2, '#passwordNext')
 
-    await page2.waitForTimeout(15000)
+    await page2.waitForTimeout(3000)
+    if(page2.url.includes('https://accounts.google.com/signin/v2/challenge/selection')){
+        await PuppUtils.click(page2, 'li:first-child')
+        await page2.waitForTimeout(3000)
+        await PuppUtils.typeText(page2, '#knowledge-preregistered-email-response', info.recoveryForwardMail)
+        await PuppUtils.click(page, 'button[type="button"]:first-child')
+    } 
+
+    await page2.waitForTimeout(10000)
     codeForward = await page2.evaluateHandle((info) => {
         let index = 0
         let result = document.querySelectorAll('span[data-legacy-last-non-draft-message-id]')[index].innerHTML.trim().indexOf(`Gmail Forwarding Confirmation - Receive Mail from ${info.mail}`)
@@ -579,7 +585,7 @@ async function generateShopName(page, info, reGen = false) {
 
         await PuppUtils.typeText(page, '#onboarding-shop-name-input', shopName)
         await page.waitForTimeout(500)
-        if (!reGen) {
+        if (reGen == false) {
             await PuppUtils.click(page, '[data-action="check-availability"]')
             await page.waitForTimeout(2500)
         }
@@ -793,6 +799,7 @@ async function createNewListing(page, info) {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("United States")`).find('#shipping_carrier option[value="2"]')[0]
     })
     await element.click()
+    console.log('0')
     //Chon fix price shipping
     await page.waitForTimeout(SLOW_MO)
     element = await page.evaluateHandle(() => {
@@ -806,6 +813,7 @@ async function createNewListing(page, info) {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("United States")`).find('#charge_option option[value="fixed"]')[0]
     })
     await element.click()
+    console.log('1')
     //Nhap Price one item
     // await page.waitForTimeout(3000)
     // console.log('evaluate')
@@ -832,6 +840,7 @@ async function createNewListing(page, info) {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Everywhere else")`).find('#shipping_carrier option[value="2"]')[0]
     })
     await element.click()
+    console.log('2')
     //Chon fix price shipping
     await page.waitForTimeout(SLOW_MO)
     element = await page.evaluateHandle(() => {
@@ -845,6 +854,7 @@ async function createNewListing(page, info) {
         return $(`div.wt-grid.wt-pt-xs-4.wt-pb-xs-4:contains("Everywhere else")`).find('#charge_option option[value="fixed"]')[0]
     })
     await element.click()
+    console.log('3')
     //Nhap Price one item
     // await page.waitForTimeout(3000)
     // element = await page.evaluateHandle(() => {
@@ -859,24 +869,24 @@ async function createNewListing(page, info) {
     // await PuppUtils.typeText(page, element, "10.99")
 
     await page.waitForTimeout(SLOW_MO)
-    element = await page.evaluateHandle(() => {
-        return $(`button:contains("Save as a shipping profile")`)[0]
-    })
-    await PuppUtils.click(page, element)
-
-    await page.waitForTimeout(5000)
-    element = await page.evaluateHandle(() => {
-        return $(`button:contains("Confirm")`)[0]
-    })
-    await PuppUtils.click(page, element)
+    // element = await page.evaluateHandle(() => {
+    //     return $(`button:contains("Save as a shipping profile")`)[0]
+    // })
+    await PuppUtils.click(page, '[data-region="shipping-profiles"] button.wt-btn--outline')
+    console.log('4')
+    // await page.waitForTimeout(5000)
+    // element = await page.evaluateHandle(() => {
+    //     return $(`button:contains("Confirm")`)[0]
+    // })
+    // await PuppUtils.click(page, element)
 
     await page.waitForTimeout(2000)
     await PuppUtils.typeText(page, 'input[placeholder="Name of the profile"]', "CANVAS CC")
 
-    element = await page.evaluateHandle(() => {
-        return $(`button:contains("Create profile")`)[0]
-    })
-    await PuppUtils.click(page, element)
+    // element = await page.evaluateHandle(() => {
+    //     return $(`button:contains("Create profile")`)[0]
+    // })
+    await PuppUtils.click(page, '[aria-label="Overlay to save an unshared profile"] button.wt-btn--filled')
     await page.waitForTimeout(3000)
 
     await PuppUtils.click(page, '.page-footer [data-save]')
