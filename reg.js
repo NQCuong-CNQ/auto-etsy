@@ -181,9 +181,13 @@ async function checkIp(ip, info) {
         await changeIp(ip, info)
         return
     }
-    console.log("Save IP address: " + ip);
-    infos[iNumCurrentAccount].ip = ip
-    saveInfos()
+    if(ip.length < 20){
+        console.log("Save IP address: " + ip);
+        infos[iNumCurrentAccount].ip = ip
+        saveInfos()
+    }else{
+        console.log("get Ip addr failed!")
+    }
 
     await sleep(1000);
     await startRegAccount(info)
