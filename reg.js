@@ -308,10 +308,10 @@ async function addGoogleBirthday(page, info) {
     } await page.keyboard.press('Enter', 500)   
 
     await PuppUtils.typeText(page, 'input[placeholder="YYYY"]', getDateOfBirth(2, info).toString())    
-    await page.waitForTimeout(2000)
-    await PuppUtils.click(page, '[data-mdc-dialog-action="ok"]')
     await page.waitForTimeout(SLOW_MO)
     await PuppUtils.click(page, 'button:first-child')
+    await page.waitForTimeout(2000)
+    await PuppUtils.click(page, '[data-mdc-dialog-action="ok"]')
 }
 
 async function loginGoogle(page, info) {
@@ -341,10 +341,10 @@ async function loginEtsy(page, info) {
     await PuppUtils.click(page, 'button[data-google-button="true"]')
     const newPage = await newPagePromise
 
-    await page.waitForTimeout(10000)
+    await page.waitForTimeout(15000)
     await PuppUtils.click(newPage, '[data-identifier]')
 
-    await page.waitForTimeout(20000)
+    await page.waitForTimeout(25000)
     if (await PuppUtils.isElementVisbile(page, '[data-ge-nav-event-name="gnav_show_user_menu"]')) {
         await registerShop(page, info)
         return
@@ -932,7 +932,9 @@ async function submitBussinessInfo(page, info) {
     await element.click()
 
     await page.waitForTimeout(SLOW_MO)
-    await PuppUtils.typeText(page, "#bank-name-on-account", info.firstName + " " + info.middleName + " " + info.lastName)
+    if(!await PuppUtils.isElementVisbile(page, '[data-ui="bank_account_legal_name"]')){
+        await PuppUtils.typeText(page, "#bank-name-on-account", info.firstName + " " + info.middleName + " " + info.lastName)
+    }
     await PuppUtils.typeText(page, "#bank-routing-number", getRoutingNumber(info))
     await PuppUtils.typeText(page, "#bank-account-number", info.accountNumber)
 
