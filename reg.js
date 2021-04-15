@@ -419,7 +419,7 @@ async function forwardEmail(info) {
     await PuppUtils.jsWaitForSelector(page2, '[name="password"]', 4000)
     await page2.waitForTimeout(5000)
     await PuppUtils.typeText(page2, '[name="password"]', info.passForward.trim())
-    await PuppUtils.waitNextUrl(page2, '#passwordNext')
+    await PuppUtils.click(page2, '#passwordNext')
 
     await page2.waitForTimeout(3000)
     if (page2.url.includes('https://accounts.google.com/signin/v2/challenge/selection')) {
