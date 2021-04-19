@@ -103,14 +103,13 @@ async function changeIp(info) {
     // await sleep(10000)
     // await toggleHome()
     console.log("Done!")
-    await sleep(3000)
-    var http = require('http')
+    await sleep(10000)
     http.get({ 'host': 'api.ipify.org', 'port': 80, 'path': '/' }, function (resp) {
         resp.on('data', async function (ip) {
-            console.log("My current IP address is: " + ip);
-            await checkIp(ip, info);
-        });
-    });
+            console.log("My current IP address is: " + ip)
+            await checkIp(ip, info)
+        })
+    })
 }
 async function toggleCheckAPM() {
     console.log("toggleCheckAPM")
@@ -428,6 +427,8 @@ async function forwardEmail(info) {
     if (await PuppUtils.isElementVisbile(page2, '.T-I.T-I-JN')) {
         await PuppUtils.click(page2, '.T-I.T-I-JN:last-child')
         await page2.waitForTimeout(SLOW_MO)
+    } else if (page2.url().includes('https://gds.google.com/web/chip')) {
+        await addGoogleChip(page2, info)
     } else { console.log("khong co vat can") }
 
     await PuppUtils.click(page2, 'input[value="Add a forwarding address"]')
@@ -438,7 +439,7 @@ async function forwardEmail(info) {
     await PuppUtils.click(page2, '[role="alertdialog"] button[name="next"]')
     const newPage = await newPagePromise
 
-    await page2.waitForTimeout(3000)
+    await page2.waitForTimeout(5000)
     await PuppUtils.click(newPage, 'form input[value="Proceed"]')
 
     await page2.waitForTimeout(3000)
