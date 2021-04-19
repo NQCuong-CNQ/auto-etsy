@@ -289,6 +289,7 @@ async function checkLoginProgress(page, info) {
                 await page.waitForTimeout(SLOW_MO)
             }
             await loginEtsy(page, info)
+            return
         } else if (page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
             await confirmRecoveryOption(page)
         } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')) {
