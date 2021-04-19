@@ -56,7 +56,7 @@ async function checkAccountValid() {
     if (iNumCurrentAccount < infos.length) {
         let info = infos[iNumCurrentAccount]
         console.log(info.mail)
-        if (infos[iNumCurrentAccount].status == "Suspended" || infos[iNumCurrentAccount].status == "Success") {
+        if (infos[iNumCurrentAccount].status == "Suspended" || infos[iNumCurrentAccount].status == "Success" || infos[iNumCurrentAccount].status == "Abandon") {
             console.log("This account is Passed")
             iNumCurrentAccount++
             checkAccountValid()
@@ -427,9 +427,15 @@ async function forwardEmail(info) {
     if (await PuppUtils.isElementVisbile(page2, '.T-I.T-I-JN')) {
         await PuppUtils.click(page2, '.T-I.T-I-JN:last-child')
         await page2.waitForTimeout(SLOW_MO)
+    } else if (page2.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
+        await confirmRecoveryOption(page2)
+    } else if (page2.url().includes('https://myaccount.google.com/interstitials/birthday')) {
+        await addGoogleBirthday(page2, info)
     } else if (page2.url().includes('https://gds.google.com/web/chip')) {
-        await addGoogleChip(page2, info)
-    } else { console.log("khong co vat can") }
+        await addGoogleChip(page2)
+    } else if (page2.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
+        await confirmRecoveryEmail(page2, info)
+    }
 
     await PuppUtils.click(page2, 'input[value="Add a forwarding address"]')
     await page2.waitForTimeout(2000)
