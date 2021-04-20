@@ -235,7 +235,7 @@ async function startRegAccount(info) {
     }).on("error", async (err) => {
         console.log(err.message)
         console.log("err start")
-        await sleep(8000)
+        await sleep(15000)
         startRegAccount(info)
         return
     })
@@ -243,14 +243,15 @@ async function startRegAccount(info) {
 
 async function runBrowser(ws, info) {
     try {
-        sleep(25000)
+        sleep(30000)
         browser = await puppeteer.connect({
             browserWSEndpoint: ws,
             defaultViewport: null,
             slowMo: 50,
+            headless: false,
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         })
-        sleep(3000)
+        sleep(5000)
         const page = await browser.newPage()
         await page.waitForTimeout(SLOW_MO)
         await page.setDefaultNavigationTimeout(0)
@@ -267,7 +268,7 @@ async function runBrowser(ws, info) {
         console.log("err run browser")
         browser.close()
         console.log("retrying run browser...")
-        await sleep(8000)
+        await sleep(15000)
         startRegAccount(info)
         return
     }
@@ -290,7 +291,7 @@ async function checkLoginProgress(page, info) {
         await confirmRecoveryEmail(page, info)
     } else {
         await loginGoogle(page, info)
-        await page.waitForTimeout(8000)
+        await page.waitForTimeout(10000)
         if (page.url().includes('https://mail.google.com/mail/u/')) {
             if (await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')) {
                 await PuppUtils.click(page, '.T-I.T-I-JN:last-child')
@@ -312,7 +313,7 @@ async function checkLoginProgress(page, info) {
 }
 
 async function confirmRecoveryEmail(page, info) {
-    await PuppUtils.click(page, 'li:first-child')
+    await PuppUtils.click(page, 'li:nth-child(2)')
     await page.waitForTimeout(3000)
     await PuppUtils.typeText(page, '#knowledge-preregistered-email-response', info.recoveryMail)
     await PuppUtils.click(page, 'button[type="button"]:first-child')
@@ -437,7 +438,7 @@ async function forwardEmail(info) {
     const page2 = await browser.newPage()
     await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop')
     await page2.bringToFront()
-    await page2.waitForTimeout(12000)
+    await page2.waitForTimeout(15000)
     if (await PuppUtils.isElementVisbile(page2, '.T-I.T-I-JN')) {
         await PuppUtils.click(page2, '.T-I.T-I-JN:last-child')
         await page2.waitForTimeout(SLOW_MO)
@@ -459,7 +460,7 @@ async function forwardEmail(info) {
     await PuppUtils.click(page2, '[role="alertdialog"] button[name="next"]')
     const newPage = await newPagePromise
 
-    await page2.waitForTimeout(5000)
+    await page2.waitForTimeout(8000)
     await PuppUtils.click(newPage, 'form input[value="Proceed"]')
 
     await page2.waitForTimeout(3000)
@@ -541,9 +542,9 @@ async function setupBilling(page, info) {
 
     await page.waitForTimeout(SLOW_MO)
     await PuppUtils.typeText(page, '#billing-cc-ccv', getCreditCard(info.card, 3))
-    await PuppUtils.typeText(page, '#billing-name', info.firstName + " " + info.middleName + " " + info.lastName)
+    await PuppUtils.typeText(page, '#billing-name', capitalizeLetter(info.firstName) + " " + capitalizeLetter(info.middleName) + " " + capitalizeLetter(info.lastName))
     await PuppUtils.typeText(page, 'input[name="billing[address]"]', info.address)
-    await PuppUtils.typeText(page, 'input[name="billing[city]"]', info.city)
+    await PuppUtils.typeText(page, 'input[name="billing[city]"]', capitalizeLetter(info.city))
 
     await page.waitForTimeout(SLOW_MO)
     element = await page.$('[name="billing[state]"]')
@@ -640,10 +641,14 @@ async function submitShopName(page, info) {
     await PuppUtils.click(page, 'button[data-subway-next="true"]')
 }
 
+function capitalizeLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+  }
+
 async function generateShopName(page, info, reGen = 0) {
     try {
         let shopName = ""
-        shopName = info.firstName + info.lastName
+        shopName = capitalizeLetter(info.firstName) + capitalizeLetter(info.lastName)
         if (reGen == 1) {
             shopName += getFirstLetterShopName(info)
         } else if (reGen == 2) {
@@ -674,7 +679,7 @@ async function generateShopName(page, info, reGen = 0) {
 
 function getFirstLetterShopName(info) {
     let fShopName = info.firstName.charAt(0) + info.lastName.charAt(0)
-    return fShopName
+    return fShopName.toUpperCase()
 }
 
 async function createNewListing(page, info) {
@@ -966,7 +971,7 @@ async function submitBussinessInfo(page, info) {
 
     await page.waitForTimeout(SLOW_MO)
     if (!await PuppUtils.isElementVisbile(page, '[data-ui="bank_account_legal_name"]')) {
-        await PuppUtils.typeText(page, "#bank-name-on-account", info.firstName + " " + info.middleName + " " + info.lastName)
+        await PuppUtils.typeText(page, "#bank-name-on-account", capitalizeLetter(info.firstName) + " " + capitalizeLetter(info.middleName) + " " + capitalizeLetter(info.lastName))
     }
     await PuppUtils.typeText(page, "#bank-routing-number", getRoutingNumber(info))
     await PuppUtils.typeText(page, "#bank-account-number", info.accountNumber)
@@ -991,8 +996,8 @@ async function submitBussinessInfo(page, info) {
     await element.click()
 
     await page.waitForTimeout(SLOW_MO)
-    await PuppUtils.typeText(page, "#identity-first-name", info.firstName)
-    await PuppUtils.typeText(page, "#identity-last-name", info.lastName)
+    await PuppUtils.typeText(page, "#identity-first-name", capitalizeLetter(info.firstName))
+    await PuppUtils.typeText(page, "#identity-last-name", capitalizeLetter(info.lastName))
     //dob month
     await page.waitForTimeout(SLOW_MO)
     element = await page.$('#dob-container-month')
