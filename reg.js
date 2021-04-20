@@ -6,8 +6,6 @@ const fs = require('fs')
 const PuppUtils = require('./lib/PuppUtils')
 const fetch = require('node-fetch')
 const { nanoid } = require('nanoid');
-const { exec } = require('child_process')
-const http = require('http')
 
 const SLOW_MO = 1500
 var country
@@ -63,8 +61,7 @@ async function checkAccountValid() {
             checkAccountValid()
             return
         }
-        await changeIp(info)
-        // await startRegAccount(info)
+        await startRegAccount(info)
     } else {
         console.log("Done All!!!")
         return
@@ -77,180 +74,8 @@ function sleep(ms) {
     );
 }
 
-async function changeIp(info) {
-    // console.log("start toggle")
-    // await toggleHome()
-    // await toggleTetherSettings()
-    // await toggleTab()
-    // await toggleTab()
-    // await toggleTab()
-    // await toggleEnter()
-    // await sleep(10000)
-    // await toggleHome()
-    // await toggleAPMSettings()
-    // await toggleTab()
-    // await toggleEnter()
-    // await toggleHome()
-    // await toggleAPMSettings()
-    // await sleep(3000)
-    // await toggleEnter()
-    // await toggleHome()
-    // await toggleCheckAPM()
-    // await toggleTetherSettings()
-    // await toggleTab()
-    // await toggleTab()
-    // await toggleTab()
-    // await toggleEnter()
-    // await sleep(10000)
-    // await toggleHome()
-    // console.log("Done!")
-    // await sleep(3000)
-    if(info.ip == ""){
-        http.get({ 'host': 'api.ipify.org', 'port': 80, 'path': '/' }, function (resp) {
-            resp.on('data', async function (ip) {
-                console.log("My current IP address is: " + ip)
-                await checkIp(ip, info)
-            });
-        });
-    } else {
-        console.log("Current IP address is: " + info.ip)
-        await startRegAccount(info)
-    }
-}
-async function toggleCheckAPM() {
-    console.log("toggleCheckAPM")
-    exec('adb.exe shell settings get global airplane_mode_on', { cwd: './adb' }, async function (err, stdout, stderr) {
-        if (err) {
-            console.error(err)
-        } else {
-            if (stdout == 1) {
-                console.log("Retry turn off airplane mode!")
-                await toggleHome()
-                await toggleAPMSettings()
-                await toggleEnter()
-                await toggleHome()
-            } else {
-                console.log("Success!")
-            }
-        }
-    })
-    await sleep(1000)
-}
-async function toggleHome() {
-    exec('adb.exe shell input keyevent 3', { cwd: './adb' }, (err, stdout, stderr) => {
-        if (err) {
-            console.error(err)
-        } else {
-        }
-    })
-    await sleep(1000)
-}
-async function toggleTetherSettings() {
-    exec('adb.exe shell am start -n com.android.settings/.TetherSettings', { cwd: './adb' }, (err, stdout, stderr) => {
-        if (err) {
-            console.error(err)
-        } else {
-        }
-    })
-    await sleep(1000)
-}
-async function toggleAPMSettings() {
-    exec('adb.exe shell am start -a android.settings.AIRPLANE_MODE_SETTINGS', { cwd: './adb' }, (err, stdout, stderr) => {
-        if (err) {
-            console.error(err)
-        } else {
-        }
-    })
-    await sleep(1000)
-}
-
-async function toggleEnter() {
-    exec('adb.exe shell input keyevent 66', { cwd: './adb' }, (err, stdout, stderr) => {
-        if (err) {
-            console.error(err)
-        } else {
-        }
-    })
-    await sleep(3000)
-}
-
-async function toggleTab() {
-    exec('adb.exe shell input keyevent 61', { cwd: './adb' }, (err, stdout, stderr) => {
-        if (err) {
-            console.error(err)
-        } else {
-        }
-    })
-    await sleep(1000)
-}
-
-async function checkIp(ip, info) {
-    // if (isIpExist(ip)) {
-    //     console.log("Duplicate IP: " + ip);
-    //     await changeIp(ip, info)
-    //     return
-    // }
-    // if (ip.length < 20) {
-    //     console.log("Save IP address: " + ip);
-    //     infos[iNumCurrentAccount].ip = ip
-    //     saveInfos()
-    // } else {
-    //     console.log("get Ip addr failed!")
-    // }
-
-    infos[iNumCurrentAccount].ip = ip
-    saveInfos()
-
-    await sleep(1000);
-    await startRegAccount(info)
-}
-
-function isIpExist(ip) {
-    for (let i = 0; i < infos.length; i++) {
-        if (infos[i].ip == ip) {
-            return true
-        }
-    }
-}
-
 async function startRegAccount(info) {
-    await runBrowser(info)
-    // let profileId = info.profileID
-    // console.log('profileId: ' + profileId)
-    // http.get(`http://127.0.0.1:35000/api/v1/profile/start?automation=true&puppeteer=true&profileId=${profileId}`, async function (resp) {
-    //     let data = ''
-    //     let ws = ''
-
-    //     resp.on('data', (chunk) => {
-    //         data += chunk
-    //     })
-
-    //     resp.on('end', async function () {
-    //         try {
-    //             ws = JSON.parse(data)
-    //         } catch (err) {
-    //             console.log(err)
-    //             await sleep(8000)
-    //             startRegAccount(info)
-    //             return
-    //         }
-    //         if (typeof ws === 'object' && ws.hasOwnProperty('value')) {
-    //             await runBrowser(ws.value, info)
-    //         }
-    //     })
-
-    // }).on("error", async (err) => {
-    //     console.log(err.message)
-    //     console.log("err start")
-    //     await sleep(8000)
-    //     startRegAccount(info)
-    //     return
-    // })
-}
-
-async function runBrowser(info) {
     try {
-        // sleep(20000)
         browser = await puppeteer.launch({ 
             executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
             headless: false, 
@@ -259,23 +84,16 @@ async function runBrowser(info) {
         sleep(3000)
         const page = await browser.newPage()
         await page.waitForTimeout(SLOW_MO)
-        // await page.setDefaultNavigationTimeout(0)
         await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
         await checkLoginProgress(page, info)
         return
     } catch (err) {
         console.log(err.message)
-        // console.log("err run browser")
-        // browser.close()
-        // console.log("retrying run browser...")
-        // await sleep(8000)
-        // startRegAccount(info)
-        // return
     }
 }
 
 async function checkLoginProgress(page, info) {
-    await page.waitForTimeout(13000)
+    await page.waitForTimeout(15000)
     if (page.url().includes('https://mail.google.com/mail/u/')) {
         if (await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')) {
             await PuppUtils.click(page, '.T-I.T-I-JN:last-child')
@@ -373,7 +191,7 @@ async function loginEtsy(page, info) {
     await page.waitForTimeout(10000)
     await PuppUtils.click(newPage, '[data-identifier]')
 
-    await page.waitForTimeout(15000)
+    await page.waitForTimeout(20000)
     if (await PuppUtils.isElementVisbile(page, '[data-ge-nav-event-name="gnav_show_user_menu"]')) {
         await registerShop(page, info)
         return
@@ -386,7 +204,7 @@ async function loginEtsy(page, info) {
 
 async function registerShop(page, info) {
     await page.goto('https://www.etsy.com/your/shop/create?us_sell_create_value')
-    await page.waitForTimeout(4000)
+    await page.waitForTimeout(5000)
     onNextStep(page, info)
 }
 
@@ -588,7 +406,7 @@ async function submitShoppreferences(page, info) {
     if(info.country == "Australia"){
         country = "AU"
     }
-    element = await page.$(`#locale-overlay-select-region_code [value="${country}"]`)
+    element = await page.$(`#locale-overlay-select-region_code [value="${country}"]:first-child`)
     await element.click()
     //Change language step 2
     await page.waitForTimeout(SLOW_MO)
@@ -722,7 +540,7 @@ async function createNewListing(page, info) {
     await PuppUtils.typeText(page, "#taxonomy-search", info.category)
     await page.waitForTimeout(2000)
     await page.keyboard.press('Enter')
-
+    await page.waitForTimeout(1000)
     await PuppUtils.typeText(page, "#description-text-area-input", info.description)
     await PuppUtils.typeText(page, "#price_retail-input", info.price)
     await PuppUtils.typeText(page, "#quantity_retail-input", "999")
