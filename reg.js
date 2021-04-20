@@ -55,12 +55,12 @@ async function checkAccountValid() {
     if (iNumCurrentAccount < infos.length) {
         let info = infos[iNumCurrentAccount]
         console.log(info.mail)
-        if (infos[iNumCurrentAccount].status == "Suspended" || infos[iNumCurrentAccount].status == "Success" || infos[iNumCurrentAccount].status == "Abandon") {
+        if (info.status == "Suspended" || info.status == "Success" || info.status == "Abandon") {
             console.log("This account is Passed")
             iNumCurrentAccount++
             checkAccountValid()
             return
-        }
+        } 
         await startRegAccount(info)
     } else {
         console.log("Done All!!!")
@@ -164,6 +164,7 @@ async function addGoogleBirthday(page, info) {
 async function loginGoogle(page, info) {
     await PuppUtils.typeText(page, '#identifierId', info.mail.trim().toLowerCase())
     await PuppUtils.waitNextUrl(page, '#identifierNext')
+    await page.waitForTimeout(1000)
     await PuppUtils.jsWaitForSelector(page, '[name="password"]', 2000)
     await page.waitForTimeout(2000)
     await PuppUtils.typeText(page, '[name="password"]', info.password.trim())
@@ -241,10 +242,10 @@ async function onNextStep(page, info) {
         infos[iNumCurrentAccount].status = "WaitForwardEmail"
         saveInfos()
         await forwardEmail(info)
-        iNumCurrentAccount++
-        await browser.close();
-        console.log("done!")
-        await checkAccountValid()
+        // iNumCurrentAccount++
+        // await browser.close();
+        // console.log("done!")
+        // await checkAccountValid()
         return
     }
 
@@ -290,7 +291,7 @@ async function forwardEmail(info) {
     await PuppUtils.typeText(page2, '[name="password"]', info.passForward.trim())
     await PuppUtils.click(page2, '#passwordNext')
 
-    await page2.waitForTimeout(3000)
+    await page2.waitForTimeout(5000)
     if (page2.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
         await PuppUtils.click(page2, 'li:first-child')
         await page2.waitForTimeout(3000)
