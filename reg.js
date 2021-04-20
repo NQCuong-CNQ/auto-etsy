@@ -227,6 +227,7 @@ async function onNextStep(page, info) {
         await submitBussinessInfo(page, info)
     } else if (await PuppUtils.isElementVisbile(page, '[data-onboarding-step="setup-billing"]')) {   // Step 4
         await setupBilling(page, info)
+        await page.waitForTimeout(6000)
     } else if (await PuppUtils.isElementVisbile(page, 'data-ui="upload-module"')) {   // Step 4
         infos[iNumCurrentAccount].status = "Abandon"
         saveInfos()
@@ -234,7 +235,7 @@ async function onNextStep(page, info) {
         await browser.close();
         await checkAccountValid()
         return
-    } else if (page.url().includes('https://www.etsy.com/ca/shop/')) {
+    } else if (page.url().includes('/shop/')) {
         var datetime = new Date();
         infos[iNumCurrentAccount].dayREG = datetime.toISOString().slice(0, 10)
         infos[iNumCurrentAccount].status = "WaitForwardEmail"
@@ -838,6 +839,7 @@ async function submitBussinessInfo(page, info) {
     await page.evaluate(() => {
         $(`#dob-container-day`).get(0).size = 1000
     })
+    console.log(getDateOfBirth(1, info))
     element = await page.$(`#dob-container-day option[value="${getDateOfBirth(1, info)}"]`)
     await element.click()
     //dob year
