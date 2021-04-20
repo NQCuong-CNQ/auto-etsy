@@ -56,13 +56,16 @@ async function checkAccountValid() {
     if (iNumCurrentAccount < infos.length) {
         let info = infos[iNumCurrentAccount]
         console.log(info.mail)
-        if (infos[iNumCurrentAccount].status == "Suspended" || infos[iNumCurrentAccount].status == "Success" || infos[iNumCurrentAccount].status == "Abandon") {
+        if (info.status == "Suspended" || info.status == "Success" || info.status == "Abandon") {
             console.log("This account is Passed")
             iNumCurrentAccount++
-            checkAccountValid()
-            return
+            await checkAccountValid()
+        } else if (info.status == "WaitForwardEmail"){
+            await startRegAccount(info)
+        } else {
+            await changeIp(info)
         }
-        await changeIp(info)
+        return
         // await startRegAccount(info)
     } else {
         console.log("Done All!!!")
@@ -240,7 +243,7 @@ async function startRegAccount(info) {
 
 async function runBrowser(ws, info) {
     try {
-        sleep(20000)
+        sleep(25000)
         browser = await puppeteer.connect({
             browserWSEndpoint: ws,
             defaultViewport: null,
@@ -251,8 +254,13 @@ async function runBrowser(ws, info) {
         const page = await browser.newPage()
         await page.waitForTimeout(SLOW_MO)
         await page.setDefaultNavigationTimeout(0)
-        await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
-        await checkLoginProgress(page, info)
+        if (info.status == "WaitForwardEmail"){
+            await forwardEmail(info)
+            await finishReg()
+        } else {
+            await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
+            await checkLoginProgress(page, info)
+        }
         return
     } catch (err) {
         console.log(err.message)
@@ -406,10 +414,7 @@ async function onNextStep(page, info) {
         infos[iNumCurrentAccount].status = "WaitForwardEmail"
         saveInfos()
         await forwardEmail(info)
-        iNumCurrentAccount++
-        await browser.close();
-        console.log("done!")
-        await checkAccountValid()
+        await finishReg()
         return
     }
 
@@ -418,6 +423,14 @@ async function onNextStep(page, info) {
 
     await page.waitForTimeout(5000)
     await onNextStep(page, info)
+}
+
+async function finishReg() {
+    iNumCurrentAccount++
+    await browser.close();
+    console.log("done!")
+    await checkAccountValid()
+    return
 }
 
 async function forwardEmail(info) {
