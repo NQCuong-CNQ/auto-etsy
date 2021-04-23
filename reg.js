@@ -259,7 +259,7 @@ async function runBrowser(ws, info) {
             await forwardEmail(info)
             await finishReg()
         } else {
-            await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin')
+            await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin', { waitUntil: 'domcontentloaded' })
             await checkLoginProgress(page, info)
         }
         return
@@ -320,7 +320,7 @@ async function confirmRecoveryEmail(page, info) {
 }
 
 async function addGoogleChip(page) {
-    await PuppUtils.click(page, $x('//*[@id="yDmH0d"]/c-wiz/div/div/div/div[2]/div[4]/div[1]'))
+    await PuppUtils.click(page, '[data-ogpc] > div>div>div>div:nth-child(2)>div:nth-child(4) [role="button"]:first-child')
 }
 
 async function addGoogleBirthday(page, info) {
@@ -353,7 +353,7 @@ async function loginGoogle(page, info) {
 }
 
 async function loginEtsy(page, info) {
-    await page.goto('https://www.etsy.com')
+    await page.goto('https://www.etsy.com', { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(5000)
     if (await PuppUtils.isElementVisbile(page, '.select-signin')) {
     } else {
@@ -385,7 +385,7 @@ async function loginEtsy(page, info) {
 }
 
 async function registerShop(page, info) {
-    await page.goto('https://www.etsy.com/your/shop/create?us_sell_create_value')
+    await page.goto('https://www.etsy.com/your/shop/create?us_sell_create_value', { waitUntil: 'domcontentloaded' })
     await page.waitForTimeout(2000)
     onNextStep(page, info)
 }
@@ -436,7 +436,7 @@ async function finishReg() {
 
 async function forwardEmail(info) {
     const page2 = await browser.newPage()
-    await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop')
+    await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop', { waitUntil: 'domcontentloaded' })
     await page2.bringToFront()
     await page2.waitForTimeout(15000)
     if (await PuppUtils.isElementVisbile(page2, '.T-I.T-I-JN')) {
@@ -466,7 +466,7 @@ async function forwardEmail(info) {
     await page2.waitForTimeout(3000)
     await PuppUtils.click(page2, 'button[name="ok"]')
     await page2.waitForTimeout(2000)
-    await page2.goto('https://accounts.google.com/AddSession?hl=en&continue=https://mail.google.com/mail&service=mail&ec=GAlAFw')
+    await page2.goto('https://accounts.google.com/AddSession?hl=en&continue=https://mail.google.com/mail&service=mail&ec=GAlAFw', { waitUntil: 'domcontentloaded' })
 
     await page2.waitForTimeout(3000)
 
@@ -497,7 +497,7 @@ async function forwardEmail(info) {
     }, info)
     let res = await (await codeForward.getProperty('innerHTML')).jsonValue()
 
-    await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop')
+    await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop', { waitUntil: 'domcontentloaded' })
     await page2.bringToFront()
     await page2.waitForTimeout(8000)
 
@@ -683,7 +683,7 @@ function getFirstLetterShopName(info) {
 }
 
 async function createNewListing(page, info) {
-    await page.goto(`https://www.etsy.com/your/shops/${info.shopName}/onboarding/listings/create`)
+    await page.goto(`https://www.etsy.com/your/shops/${info.shopName}/onboarding/listings/create`, { waitUntil: 'domcontentloaded' })
     let imagesFolderName = './input/' + String(storage.dataCount)
     let imageFiles = fs.readdirSync(imagesFolderName)
 
@@ -1087,5 +1087,5 @@ function saveInfos() {
 }
 
 async function confirmRecoveryOption(page) {
-    await PuppUtils.click(page, $x('//*[@id="yDmH0d"]/c-wiz[2]/c-wiz/div/div[1]/div/div/div/div[2]/div[3]/div/div[2]/div'))
+    await PuppUtils.click(page, '[role="presentation"]>div>div>div:nth-child(2)>div:nth-child(3)>div>div:nth-child(2) [role="button"]')
 }
