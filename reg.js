@@ -275,7 +275,7 @@ async function runBrowser(ws, info) {
 }
 
 async function checkLoginProgress(page, info) {
-    await page.waitForTimeout(10000)
+    await page.waitForTimeout(5000)
     if (page.url().includes('https://mail.google.com/mail/u/')) {
         if (await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')) {
             await PuppUtils.click(page, '.T-I.T-I-JN:last-child')
@@ -291,7 +291,7 @@ async function checkLoginProgress(page, info) {
         await confirmRecoveryEmail(page, info)
     } else {
         await loginGoogle(page, info)
-        await page.waitForTimeout(10000)
+        await page.waitForTimeout(5000)
         if (page.url().includes('https://mail.google.com/mail/u/')) {
             if (await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')) {
                 await PuppUtils.click(page, '.T-I.T-I-JN:last-child')
@@ -346,15 +346,15 @@ async function addGoogleBirthday(page, info) {
 async function loginGoogle(page, info) {
     await PuppUtils.typeText(page, '#identifierId', info.mail.trim().toLowerCase())
     await PuppUtils.waitNextUrl(page, '#identifierNext')
-    await PuppUtils.jsWaitForSelector(page, '[name="password"]', 4000)
-    await page.waitForTimeout(5000)
+    await PuppUtils.jsWaitForSelector(page, '[name="password"]', 3000)
+    await page.waitForTimeout(3000)
     await PuppUtils.typeText(page, '[name="password"]', info.password.trim())
     await PuppUtils.waitNextUrl(page, '#passwordNext')
 }
 
 async function loginEtsy(page, info) {
     await page.goto('https://www.etsy.com', { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(5000)
+    await page.waitForTimeout(3000)
     if (await PuppUtils.isElementVisbile(page, '.select-signin')) {
     } else {
         await registerShop(page, info)
@@ -369,7 +369,7 @@ async function loginEtsy(page, info) {
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     await PuppUtils.click(page, 'button[data-google-button="true"]')
     const newPage = await newPagePromise
-
+    await newPage.bringToFront()
     await page.waitForTimeout(8000)
     await PuppUtils.click(newPage, '[data-identifier]')
 
@@ -459,7 +459,7 @@ async function forwardEmail(info) {
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     await PuppUtils.click(page2, '[role="alertdialog"] button[name="next"]')
     const newPage = await newPagePromise
-
+    await newPage.bringToFront()
     await page2.waitForTimeout(8000)
     await PuppUtils.click(newPage, 'form input[value="Proceed"]')
 
