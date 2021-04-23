@@ -275,7 +275,8 @@ async function runBrowser(ws, info) {
 }
 
 async function checkLoginProgress(page, info) {
-    await page.waitForTimeout(8000)
+    console.log('launch success')
+    await page.waitForTimeout(10000)
     if (page.url().includes('https://mail.google.com/mail/u/')) {
         if (await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')) {
             await PuppUtils.click(page, '.T-I.T-I-JN:last-child')
@@ -289,25 +290,10 @@ async function checkLoginProgress(page, info) {
         await addGoogleChip(page, info)
     } else if (page.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
         await confirmRecoveryEmail(page, info)
-    } else {
+    } else if (page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
+        await confirmRecoveryOption(page)
+    }else {
         await loginGoogle(page, info)
-        await page.waitForTimeout(5000)
-        if (page.url().includes('https://mail.google.com/mail/u/')) {
-            if (await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')) {
-                await PuppUtils.click(page, '.T-I.T-I-JN:last-child')
-                await page.waitForTimeout(SLOW_MO)
-            }
-            await loginEtsy(page, info)
-            return
-        } else if (page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
-            await confirmRecoveryOption(page)
-        } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')) {
-            await addGoogleBirthday(page, info)
-        } else if (page.url().includes('https://gds.google.com/web/chip')) {
-            await addGoogleChip(page)
-        } else if (page.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
-            await confirmRecoveryEmail(page, info)
-        }
     }
     checkLoginProgress(page, info)
 }
@@ -436,26 +422,34 @@ async function finishReg(info) {
     return
 }
 
+async function forwardEmailProcess(page2, info){
+    await page2.waitForTimeout(13000)
+    if (page2.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
+        await confirmRecoveryOption(page2)
+    } if (page2.url().includes('https://myaccount.google.com/interstitials/birthday')) {
+        await addGoogleBirthday(page2, info)
+    } if (page2.url().includes('https://gds.google.com/web/chip')) {
+        await addGoogleChip(page2)
+    } if (page2.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
+        await confirmRecoveryEmail(page2, info)
+    } if (await page2.url().includes('https://mail.google.com/mail/u/0/#settings/fwdandpop')){
+        if (await PuppUtils.isElementVisbile(page2, '[role="alertdialog"]')) {
+            await PuppUtils.click(page2, '.T-I.T-I-JN:last-child')
+        } if (await PuppUtils.isElementVisbile(page2, '#link_enable_notifications')){
+            await PuppUtils.click(page2, '#link_enable_notifications')
+        }
+        return
+    }
+    await forwardEmailProcess(page2, info)
+}
+
 async function forwardEmail(info) {
     const page2 = await browser.newPage()
     await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop', { waitUntil: 'domcontentloaded' })
     await page2.bringToFront()
-    await page2.waitForTimeout(13000)
-    if (await PuppUtils.isElementVisbile(page2, '.T-I.T-I-JN')) {
-        await PuppUtils.click(page2, '.T-I.T-I-JN:last-child')
-        await page2.waitForTimeout(SLOW_MO)
-    } else if (page2.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
-        await confirmRecoveryOption(page2)
-    } else if (page2.url().includes('https://myaccount.google.com/interstitials/birthday')) {
-        await addGoogleBirthday(page2, info)
-    } else if (page2.url().includes('https://gds.google.com/web/chip')) {
-        await addGoogleChip(page2)
-    } else if (page2.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
-        await confirmRecoveryEmail(page2, info)
-    } else if (await PuppUtils.isElementVisbile(page2, '#link_enable_notifications')){
-        await PuppUtils.click(page2, '#link_enable_notifications')
-    }
 
+    await forwardEmailProcess(page2, info)
+    
     await page2.waitForTimeout(SLOW_MO)
     await PuppUtils.click(page2, 'input[value="Add a forwarding address"]')
     await page2.waitForTimeout(2000)
@@ -489,7 +483,7 @@ async function forwardEmail(info) {
         await PuppUtils.typeText(page2, '#knowledge-preregistered-email-response', info.recoveryForwardMail)
         await PuppUtils.click(page2, 'button[type="button"]:first-child')
     }
-    await page2.waitForTimeout(10000)
+    await page2.waitForTimeout(13000)
 
     codeForward = await page2.evaluateHandle((info) => {
         let index = 0
