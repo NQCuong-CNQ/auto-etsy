@@ -60,7 +60,7 @@ async function checkAccountValid() {
             console.log("This account is Passed")
             iNumCurrentAccount++
             await checkAccountValid()
-        } else if (info.status == "WaitForwardEmail"){
+        } else if (info.status == "WaitForwardEmail" || info.ip != ""){
             await startRegAccount(info)
         } else {
             await changeIp(info)
@@ -257,7 +257,7 @@ async function runBrowser(ws, info) {
         await page.setDefaultNavigationTimeout(0)
         if (info.status == "WaitForwardEmail"){
             await forwardEmail(info)
-            await finishReg()
+            await finishReg(info)
         } else {
             await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin', { waitUntil: 'domcontentloaded' })
             await checkLoginProgress(page, info)
@@ -275,7 +275,7 @@ async function runBrowser(ws, info) {
 }
 
 async function checkLoginProgress(page, info) {
-    await page.waitForTimeout(5000)
+    await page.waitForTimeout(8000)
     if (page.url().includes('https://mail.google.com/mail/u/')) {
         if (await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')) {
             await PuppUtils.click(page, '.T-I.T-I-JN:last-child')
@@ -353,8 +353,8 @@ async function loginGoogle(page, info) {
 }
 
 async function loginEtsy(page, info) {
-    await page.goto('https://www.etsy.com', { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(3000)
+    await page.goto('https://www.etsy.com')
+    await page.waitForTimeout(8000)
     if (await PuppUtils.isElementVisbile(page, '.select-signin')) {
     } else {
         await registerShop(page, info)
@@ -415,7 +415,7 @@ async function onNextStep(page, info) {
         infos[iNumCurrentAccount].status = "WaitForwardEmail"
         saveInfos()
         await forwardEmail(info)
-        await finishReg()
+        await finishReg(info)
         return
     }
 
@@ -426,11 +426,13 @@ async function onNextStep(page, info) {
     await onNextStep(page, info)
 }
 
-async function finishReg() {
-    iNumCurrentAccount++
-    await browser.close();
-    console.log("done!")
-    await checkAccountValid()
+async function finishReg(info) {
+    if(info.status == "Success"){
+        iNumCurrentAccount++
+        await browser.close();
+        console.log("done!")
+        await checkAccountValid()
+    }
     return
 }
 
@@ -438,7 +440,7 @@ async function forwardEmail(info) {
     const page2 = await browser.newPage()
     await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop', { waitUntil: 'domcontentloaded' })
     await page2.bringToFront()
-    await page2.waitForTimeout(15000)
+    await page2.waitForTimeout(13000)
     if (await PuppUtils.isElementVisbile(page2, '.T-I.T-I-JN')) {
         await PuppUtils.click(page2, '.T-I.T-I-JN:last-child')
         await page2.waitForTimeout(SLOW_MO)
@@ -450,8 +452,11 @@ async function forwardEmail(info) {
         await addGoogleChip(page2)
     } else if (page2.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
         await confirmRecoveryEmail(page2, info)
+    } else if (await PuppUtils.isElementVisbile(page2, '#link_enable_notifications')){
+        await PuppUtils.click(page2, '#link_enable_notifications')
     }
 
+    await page2.waitForTimeout(SLOW_MO)
     await PuppUtils.click(page2, 'input[value="Add a forwarding address"]')
     await page2.waitForTimeout(2000)
     await PuppUtils.typeText(page2, '[role="alertdialog"] input', info.forwardEmail)
@@ -497,9 +502,9 @@ async function forwardEmail(info) {
     }, info)
     let res = await (await codeForward.getProperty('innerHTML')).jsonValue()
 
-    await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop', { waitUntil: 'domcontentloaded' })
+    await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop')
     await page2.bringToFront()
-    await page2.waitForTimeout(8000)
+    await page2.waitForTimeout(13000)
 
     await PuppUtils.typeText(page2, 'input[act="verifyText"]', getCodeForward(res))
     await PuppUtils.click(page2, 'input[value="Verify"]')
@@ -648,7 +653,7 @@ function capitalizeLetter(string) {
 async function generateShopName(page, info, reGen = 0) {
     try {
         let shopName = ""
-        shopName = capitalizeLetter(info.firstName) + capitalizeLetter(info.lastName)
+        shopName = capitalizeLetter(info.firstName).trim() + capitalizeLetter(info.lastName).trim()
         if (reGen == 1) {
             shopName += getFirstLetterShopName(info)
         } else if (reGen == 2) {
@@ -678,7 +683,7 @@ async function generateShopName(page, info, reGen = 0) {
 }
 
 function getFirstLetterShopName(info) {
-    let fShopName = info.firstName.charAt(0) + info.lastName.charAt(0)
+    let fShopName = info.firstName.trim().charAt(0) + info.lastName.trim().charAt(0)
     return fShopName.toUpperCase()
 }
 
