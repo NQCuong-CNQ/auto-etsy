@@ -56,7 +56,7 @@ async function checkAccountValid() {
     if (iNumCurrentAccount < infos.length) {
         let info = infos[iNumCurrentAccount]
         console.log(info.mail)
-        if (info.status == "Suspended" || info.status == "Success" || info.status == "Abandon") {
+        if (info.status == "Suspended" || info.status == "Success" || info.status == "Abandon"|| info.status == "WaitForwardEmail") {
             console.log("This account is Passed")
             iNumCurrentAccount++
             await checkAccountValid()
@@ -395,12 +395,12 @@ async function onNextStep(page, info) {
         await submitBussinessInfo(page, info)
     } else if (await PuppUtils.isElementVisbile(page, '[data-onboarding-step="setup-billing"]')) {   // Step 4
         await setupBilling(page, info)
-    } else if (page.url().includes('https://www.etsy.com/ca/shop/')) {
+    } else if (page.url().includes('/shop/')) {
         var datetime = new Date();
         infos[iNumCurrentAccount].dayREG = datetime.toISOString().slice(0, 10)
         infos[iNumCurrentAccount].status = "WaitForwardEmail"
         saveInfos()
-        await forwardEmail(info)
+        // await forwardEmail(info)
         await finishReg(info)
         return
     }
@@ -413,12 +413,12 @@ async function onNextStep(page, info) {
 }
 
 async function finishReg(info) {
-    if(info.status == "Success"){
+    // if(info.status == "Success"){
         iNumCurrentAccount++
         await browser.close();
         console.log("done!")
         await checkAccountValid()
-    }
+    // }
     return
 }
 
