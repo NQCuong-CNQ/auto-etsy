@@ -80,7 +80,7 @@ function sleep(ms) {
 }
 
 async function changeIp(info) {
-    console.log("start toggle")
+    // console.log("start toggle")
     // await toggleHome()
     // await toggleTetherSettings()
     // await toggleTab()
@@ -91,11 +91,11 @@ async function changeIp(info) {
     // await toggleHome()
     // await toggleAPMSettings()
     // await toggleTab()
-    await toggleEnter()
+    // await toggleEnter()
     // await toggleHome()
     // await toggleAPMSettings()
-    await sleep(3000)
-    await toggleEnter()
+    // await sleep(3000)
+    // await toggleEnter()
     // await toggleHome()
     // await toggleCheckAPM()
     // await toggleTetherSettings()
@@ -105,8 +105,8 @@ async function changeIp(info) {
     // await toggleEnter()
     // await sleep(10000)
     // await toggleHome()
-    console.log("Done!")
-    await sleep(10000)
+    // console.log("Done!")
+    // await sleep(10000)
     http.get({ 'host': 'api.ipify.org', 'port': 80, 'path': '/' }, function (resp) {
         resp.on('data', async function (ip) {
             console.log("My current IP address is: " + ip)
@@ -184,7 +184,7 @@ async function toggleTab() {
 async function checkIp(ip, info) {
     if (isIpExist(ip)) {
         console.log("Duplicate IP: " + ip);
-        await changeIp(ip, info)
+        // await changeIp(ip, info)
         return
     }
     if (ip.length < 20) {
