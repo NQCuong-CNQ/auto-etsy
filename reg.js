@@ -157,7 +157,7 @@ async function loginGoogle(page, info) {
 
 async function loginEtsy(page, info) {
     await page.goto('https://www.etsy.com')
-    await page.waitForTimeout(8000)
+    await page.waitForTimeout(12000)
     if (await PuppUtils.isElementVisbile(page, '.select-signin')) {
     } else {
         await registerShop(page, info)
