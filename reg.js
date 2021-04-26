@@ -4,7 +4,6 @@ puppeteer.use(StealthPlugin())
 const d3 = require('d3-dsv')
 const fs = require('fs')
 const PuppUtils = require('./lib/PuppUtils')
-const fetch = require('node-fetch')
 const { nanoid } = require('nanoid');
 
 const SLOW_MO = 1500
@@ -55,7 +54,7 @@ async function checkAccountValid() {
     if (iNumCurrentAccount < infos.length) {
         let info = infos[iNumCurrentAccount]
         console.log(info.mail)
-        if (info.status == "Suspended" || info.status == "Success" || info.status == "Abandon") {
+        if (info.status == "Suspended" || info.status == "Success" || info.status == "Abandon" || info.status == "WaitForwardEmail") {
             console.log("This account is Passed")
             iNumCurrentAccount++
             checkAccountValid()
@@ -107,38 +106,23 @@ async function checkLoginProgress(page, info) {
         await addGoogleChip(page, info)
     } else if (page.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
         await confirmRecoveryEmail(page, info)
+    } else if (page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
+        await confirmRecoveryOption(page)
     } else {
         await loginGoogle(page, info)
-        await page.waitForTimeout(8000)
-        if (page.url().includes('https://mail.google.com/mail/u/')) {
-            if (await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')) {
-                await PuppUtils.click(page, '.T-I.T-I-JN:last-child')
-                await page.waitForTimeout(SLOW_MO)
-            }
-            await loginEtsy(page, info)
-            return
-        } else if (page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
-            await confirmRecoveryOption(page)
-        } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')) {
-            await addGoogleBirthday(page, info)
-        } else if (page.url().includes('https://gds.google.com/web/chip')) {
-            await addGoogleChip(page)
-        } else if (page.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
-            await confirmRecoveryEmail(page, info)
-        }
     }
     checkLoginProgress(page, info)
 }
 
 async function confirmRecoveryEmail(page, info) {
-    await PuppUtils.click(page, 'li:first-child')
-    await page.waitForTimeout(3000)
+    await PuppUtils.click(page, 'li:nth-child(2)')
+    await page.waitForTimeout(4000)
     await PuppUtils.typeText(page, '#knowledge-preregistered-email-response', info.recoveryMail)
     await PuppUtils.click(page, 'button[type="button"]:first-child')
 }
 
 async function addGoogleChip(page) {
-    await PuppUtils.click(page, $x('//*[@id="yDmH0d"]/c-wiz/div/div/div/div[2]/div[4]/div[1]'))
+    await PuppUtils.click(page, '[data-ogpc] > div>div>div>div:nth-child(2)>div:nth-child(4) [role="button"]:first-child')
 }
 
 async function addGoogleBirthday(page, info) {
@@ -164,8 +148,8 @@ async function addGoogleBirthday(page, info) {
 async function loginGoogle(page, info) {
     await PuppUtils.typeText(page, '#identifierId', info.mail.trim().toLowerCase())
     await PuppUtils.waitNextUrl(page, '#identifierNext')
-    await page.waitForTimeout(1000)
-    await PuppUtils.jsWaitForSelector(page, '[name="password"]', 2000)
+    await page.waitForTimeout(2000)
+    await PuppUtils.jsWaitForSelector(page, '[name="password"]', 3000)
     await page.waitForTimeout(2000)
     await PuppUtils.typeText(page, '[name="password"]', info.password.trim())
     await PuppUtils.waitNextUrl(page, '#passwordNext')
@@ -173,7 +157,7 @@ async function loginGoogle(page, info) {
 
 async function loginEtsy(page, info) {
     await page.goto('https://www.etsy.com')
-    await page.waitForTimeout(6000)
+    await page.waitForTimeout(8000)
     if (await PuppUtils.isElementVisbile(page, '.select-signin')) {
     } else {
         await registerShop(page, info)
@@ -205,7 +189,7 @@ async function loginEtsy(page, info) {
 
 async function registerShop(page, info) {
     await page.goto('https://www.etsy.com/your/shop/create?us_sell_create_value')
-    await page.waitForTimeout(5000)
+    await page.waitForTimeout(8000)
     onNextStep(page, info)
 }
 
@@ -241,10 +225,10 @@ async function onNextStep(page, info) {
         infos[iNumCurrentAccount].dayREG = datetime.toISOString().slice(0, 10)
         infos[iNumCurrentAccount].status = "WaitForwardEmail"
         saveInfos()
-        await forwardEmail(info)
+        // await forwardEmail(info)
         // iNumCurrentAccount++
-        // await browser.close();
-        // console.log("done!")
+        await browser.close();
+        console.log("done!")
         // await checkAccountValid()
         return
     }
@@ -915,5 +899,5 @@ function saveInfos() {
 }
 
 async function confirmRecoveryOption(page) {
-    await PuppUtils.click(page, $x('//*[@id="yDmH0d"]/c-wiz[2]/c-wiz/div/div[1]/div/div/div/div[2]/div[3]/div/div[2]/div'))
+    await PuppUtils.click(page, '[role="presentation"]>div>div>div:nth-child(2)>div:nth-child(3)>div>div:nth-child(2) [role="button"]')
 }
