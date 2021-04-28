@@ -419,7 +419,7 @@ async function onNextStep(page, info) {
         infos[iNumCurrentAccount].status = "WaitForwardEmail"
         
         saveInfos()
-        // await forwardEmail(info)
+        await forwardEmail(info)
         await finishReg(info)
         return
     }
@@ -452,6 +452,7 @@ async function forwardEmailProcess(page2, info){
     } if (page2.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
         await confirmRecoveryEmail(page2, info)
     } if (await page2.url().includes('https://mail.google.com/mail/u/0/#settings/fwdandpop')){
+        await page2.waitForTimeout(8000)
         if (await PuppUtils.isElementVisbile(page2, '[role="alertdialog"]')) {
             await PuppUtils.click(page2, '.T-I.T-I-JN:last-child')
         } if (await PuppUtils.isElementVisbile(page2, '#link_enable_notifications')){
@@ -463,6 +464,10 @@ async function forwardEmailProcess(page2, info){
 }
 
 async function forwardEmail(info) {
+    let forwardEmail = "quanmactieu992510@gmail.com"
+    let passForward = "@Gmail992510"
+    let recoveryForwardMail = "truongkhai311099@gmail.com"
+
     const page2 = await browser.newPage()
     await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop', { waitUntil: 'domcontentloaded' })
     await page2.bringToFront()
@@ -472,7 +477,7 @@ async function forwardEmail(info) {
     await page2.waitForTimeout(SLOW_MO)
     await PuppUtils.click(page2, 'input[value="Add a forwarding address"]')
     await page2.waitForTimeout(2000)
-    await PuppUtils.typeText(page2, '[role="alertdialog"] input', info.forwardEmail)
+    await PuppUtils.typeText(page2, '[role="alertdialog"] input', forwardEmail)
 
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     await PuppUtils.click(page2, '[role="alertdialog"] button[name="next"]')
@@ -485,12 +490,7 @@ async function forwardEmail(info) {
     await PuppUtils.click(page2, 'button[name="ok"]')
     await page2.waitForTimeout(2000)
     await page2.goto('https://accounts.google.com/AddSession?hl=en&continue=https://mail.google.com/mail&service=mail&ec=GAlAFw', { waitUntil: 'domcontentloaded' })
-
     await page2.waitForTimeout(3000)
-
-    let forwardEmail = "quanmactieu992510@gmail.com"
-    let passForward = "@Gmail992510"
-    let recoveryForwardMail = "truongkhai311099@gmail.com"
 
     await PuppUtils.typeText(page2, '#identifierId', forwardEmail.trim())
     await PuppUtils.waitNextUrl(page2, '#identifierNext')
