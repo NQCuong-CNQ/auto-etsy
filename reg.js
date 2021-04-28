@@ -18,10 +18,10 @@ var iNumCurrentAccount = 0
 const MUG_VARIATION = {
     "Size": {
         '11oz': {
-            price: 13.95
+            price: 4.99
         },
         '15oz': {
-            price: 16.95
+            price: 6.99
         }
     },
     "Color": {
@@ -317,7 +317,13 @@ async function checkLoginProgress(page, info) {
 }
 
 async function confirmRecoveryEmail(page, info) {
-    await PuppUtils.click(page, 'li:nth-child(2)')
+
+    if(await PuppUtils.isElementVisbile(page, '[method="post"] li:nth-child(3)')){
+        await PuppUtils.click(page, '[method="post"] li:nth-child(2)')
+    } else {
+        await PuppUtils.click(page, '[method="post"] li:nth-child(1)')
+    }
+    
     await page.waitForTimeout(3000)
     await PuppUtils.typeText(page, '#knowledge-preregistered-email-response', info.recoveryMail)
     await PuppUtils.click(page, 'button[type="button"]:first-child')
@@ -452,7 +458,7 @@ async function forwardEmailProcess(page2, info){
     } if (page2.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
         await confirmRecoveryEmail(page2, info)
     } if (await page2.url().includes('https://mail.google.com/mail/u/0/#settings/fwdandpop')){
-        await page2.waitForTimeout(8000)
+        await page2.waitForTimeout(13000)
         if (await PuppUtils.isElementVisbile(page2, '[role="alertdialog"]')) {
             await PuppUtils.click(page2, '.T-I.T-I-JN:last-child')
         } if (await PuppUtils.isElementVisbile(page2, '#link_enable_notifications')){
@@ -469,9 +475,7 @@ async function forwardEmail(info) {
     let recoveryForwardMail = "truongkhai311099@gmail.com"
 
     const page2 = await browser.newPage()
-    await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop', { waitUntil: 'domcontentloaded' })
-    await page2.bringToFront()
-
+    await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop')
     await forwardEmailProcess(page2, info)
     
     await page2.waitForTimeout(SLOW_MO)
@@ -506,7 +510,7 @@ async function forwardEmail(info) {
         await PuppUtils.typeText(page2, '#knowledge-preregistered-email-response', recoveryForwardMail.trim())
         await PuppUtils.click(page2, 'button[type="button"]:first-child')
     }
-    await page2.waitForTimeout(13000)
+    await page2.waitForTimeout(18000)
 
     codeForward = await page2.evaluateHandle((info) => {
         let index = 0
