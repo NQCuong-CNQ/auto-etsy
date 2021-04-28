@@ -11,8 +11,8 @@ const http = require('http')
 
 const SLOW_MO = 1000
 var browser
-var storage
 var infos = []
+var products = []
 var iNumCurrentAccount = 0
 
 const MUG_VARIATION = {
@@ -37,32 +37,49 @@ const MUG_VARIATION = {
 main()
 async function main() {
     try {
-        storage = JSON.parse(fs.readFileSync('./input/storage.txt', 'utf-8'))
-        const tsvObject = d3.tsvParse(fs.readFileSync('./input/infos.tsv', 'utf-8'))
+        const tsvInfo = d3.tsvParse(fs.readFileSync('./input/infos.tsv', 'utf-8'))
+        const tsvProductt = d3.tsvParse(fs.readFileSync('./input/product.tsv', 'utf-8'))
 
-        for (const temp in tsvObject) {
+        for (const temp in tsvInfo) {
             if (temp == 'columns') {
                 continue
             }
-            infos[Number(temp)] = tsvObject[temp]
+            infos[Number(temp)] = tsvInfo[temp]
         }
+
+        for (const temp in tsvProductt) {
+            if (temp == 'columns') {
+                continue
+            }
+            products[Number(temp)] = tsvProductt[temp]
+        }
+        
         await checkAccountValid()
     } catch (err) {
         console.error(err)
     }
 }
 
+function getProductLocation(){
+    for(let i = 0; i < products.length; i++) {
+        if(products[i].isUsed == ''){
+            return i
+        }
+    }
+}
+
 async function checkAccountValid() {
     if (iNumCurrentAccount < infos.length) {
         let info = infos[iNumCurrentAccount]
-        console.log(info.mail)
-        if (info.status == "Suspended" || info.status == "Success" || info.status == "Abandon"|| info.status == "WaitForwardEmail") {
-            console.log("This account is Passed")
+        
+        if (info.status == "Suspended" || info.status == "Success" || info.status == "Abandon") {
             iNumCurrentAccount++
             await checkAccountValid()
         } else if (info.status == "WaitForwardEmail" || info.ip != ""){
+            console.log(info.mail)
             await startRegAccount(info)
         } else {
+            console.log(info.mail)
             await changeIp(info)
         }
         return
@@ -91,11 +108,11 @@ async function changeIp(info) {
     // await toggleHome()
     // await toggleAPMSettings()
     // await toggleTab()
-    // await toggleEnter()
+    await toggleEnter()
     // await toggleHome()
     // await toggleAPMSettings()
-    // await sleep(3000)
-    // await toggleEnter()
+    await sleep(3000)
+    await toggleEnter()
     // await toggleHome()
     // await toggleCheckAPM()
     // await toggleTetherSettings()
@@ -105,8 +122,8 @@ async function changeIp(info) {
     // await toggleEnter()
     // await sleep(10000)
     // await toggleHome()
-    // console.log("Done!")
-    // await sleep(10000)
+    console.log("Done!")
+    await sleep(10000)
     http.get({ 'host': 'api.ipify.org', 'port': 80, 'path': '/' }, function (resp) {
         resp.on('data', async function (ip) {
             console.log("My current IP address is: " + ip)
@@ -114,52 +131,52 @@ async function changeIp(info) {
         })
     })
 }
-async function toggleCheckAPM() {
-    console.log("toggleCheckAPM")
-    exec('adb.exe shell settings get global airplane_mode_on', { cwd: './adb' }, async function (err, stdout, stderr) {
-        if (err) {
-            console.error(err)
-        } else {
-            if (stdout == 1) {
-                console.log("Retry turn off airplane mode!")
-                await toggleHome()
-                await toggleAPMSettings()
-                await toggleEnter()
-                await toggleHome()
-            } else {
-                console.log("Success!")
-            }
-        }
-    })
-    await sleep(1000)
-}
-async function toggleHome() {
-    exec('adb.exe shell input keyevent 3', { cwd: './adb' }, (err, stdout, stderr) => {
-        if (err) {
-            console.error(err)
-        } else {
-        }
-    })
-    await sleep(1000)
-}
-async function toggleTetherSettings() {
-    exec('adb.exe shell am start -n com.android.settings/.TetherSettings', { cwd: './adb' }, (err, stdout, stderr) => {
-        if (err) {
-            console.error(err)
-        } else {
-        }
-    })
-    await sleep(1000)
-}
-async function toggleAPMSettings() {
-    exec('adb.exe shell am start -a android.settings.AIRPLANE_MODE_SETTINGS', { cwd: './adb' }, (err, stdout, stderr) => {
-        if (err) {
-            console.error(err)
-        } else {
-        }
-    })
-    await sleep(1000)
-}
+// async function toggleCheckAPM() {
+//     console.log("toggleCheckAPM")
+//     exec('adb.exe shell settings get global airplane_mode_on', { cwd: './adb' }, async function (err, stdout, stderr) {
+//         if (err) {
+//             console.error(err)
+//         } else {
+//             if (stdout == 1) {
+//                 console.log("Retry turn off airplane mode!")
+//                 await toggleHome()
+//                 await toggleAPMSettings()
+//                 await toggleEnter()
+//                 await toggleHome()
+//             } else {
+//                 console.log("Success!")
+//             }
+//         }
+//     })
+//     await sleep(1000)
+// }
+// async function toggleHome() {
+//     exec('adb.exe shell input keyevent 3', { cwd: './adb' }, (err, stdout, stderr) => {
+//         if (err) {
+//             console.error(err)
+//         } else {
+//         }
+//     })
+//     await sleep(1000)
+// }
+// async function toggleTetherSettings() {
+//     exec('adb.exe shell am start -n com.android.settings/.TetherSettings', { cwd: './adb' }, (err, stdout, stderr) => {
+//         if (err) {
+//             console.error(err)
+//         } else {
+//         }
+//     })
+//     await sleep(1000)
+// }
+// async function toggleAPMSettings() {
+//     exec('adb.exe shell am start -a android.settings.AIRPLANE_MODE_SETTINGS', { cwd: './adb' }, (err, stdout, stderr) => {
+//         if (err) {
+//             console.error(err)
+//         } else {
+//         }
+//     })
+//     await sleep(1000)
+// }
 
 async function toggleEnter() {
     exec('adb.exe shell input keyevent 66', { cwd: './adb' }, (err, stdout, stderr) => {
@@ -171,15 +188,15 @@ async function toggleEnter() {
     await sleep(3000)
 }
 
-async function toggleTab() {
-    exec('adb.exe shell input keyevent 61', { cwd: './adb' }, (err, stdout, stderr) => {
-        if (err) {
-            console.error(err)
-        } else {
-        }
-    })
-    await sleep(1000)
-}
+// async function toggleTab() {
+//     exec('adb.exe shell input keyevent 61', { cwd: './adb' }, (err, stdout, stderr) => {
+//         if (err) {
+//             console.error(err)
+//         } else {
+//         }
+//     })
+//     await sleep(1000)
+// }
 
 async function checkIp(ip, info) {
     if (isIpExist(ip)) {
@@ -399,6 +416,7 @@ async function onNextStep(page, info) {
         var datetime = new Date();
         infos[iNumCurrentAccount].dayREG = datetime.toISOString().slice(0, 10)
         infos[iNumCurrentAccount].status = "WaitForwardEmail"
+        products[getProductLocation()].isUsed = '1'
         saveInfos()
         // await forwardEmail(info)
         await finishReg(info)
@@ -469,18 +487,22 @@ async function forwardEmail(info) {
 
     await page2.waitForTimeout(3000)
 
-    await PuppUtils.typeText(page2, '#identifierId', info.forwardEmail.trim().toLowerCase())
+    let forwardEmail = "quanmactieu992510@gmail.com"
+    let passForward = "@Gmail992510"
+    let recoveryForwardMail = "truongkhai311099@gmail.com"
+
+    await PuppUtils.typeText(page2, '#identifierId', forwardEmail.trim())
     await PuppUtils.waitNextUrl(page2, '#identifierNext')
     await PuppUtils.jsWaitForSelector(page2, '[name="password"]', 4000)
     await page2.waitForTimeout(5000)
-    await PuppUtils.typeText(page2, '[name="password"]', info.passForward.trim())
+    await PuppUtils.typeText(page2, '[name="password"]', passForward.trim())
     await PuppUtils.click(page2, '#passwordNext')
 
     await page2.waitForTimeout(3000)
     if (page2.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
         await PuppUtils.click(page2, 'li:first-child')
         await page2.waitForTimeout(3000)
-        await PuppUtils.typeText(page2, '#knowledge-preregistered-email-response', info.recoveryForwardMail)
+        await PuppUtils.typeText(page2, '#knowledge-preregistered-email-response', recoveryForwardMail.trim())
         await PuppUtils.click(page2, 'button[type="button"]:first-child')
     }
     await page2.waitForTimeout(13000)
@@ -683,17 +705,18 @@ function getFirstLetterShopName(info) {
 
 async function createNewListing(page, info) {
     await page.goto(`https://www.etsy.com/your/shops/${info.shopName}/onboarding/listings/create`, { waitUntil: 'domcontentloaded' })
-    let imagesFolderName = './input/' + String(storage.dataCount)
+    await page.waitForTimeout(SLOW_MO)
+
+    let location = getProductLocation()
+    let imagesFolderName = './input/img'
     let imageFiles = fs.readdirSync(imagesFolderName)
 
-    for (let i = 0, l = imageFiles.length; i < l; i++) {
-        let imageFile = imagesFolderName + '/' + imageFiles[i]
-        let element = await page.$("#listing-edit-image-upload")
-        await element.uploadFile(imageFile)
-        await page.waitForTimeout(1500)
-    }
+    let imageFile = imagesFolderName + '/' + imageFiles[products[location].img]
+    let element = await page.$("#listing-edit-image-upload")
+    await element.uploadFile(imageFile)
+    await page.waitForTimeout(1500)
 
-    await PuppUtils.typeText(page, "#title-input", info.title)
+    await PuppUtils.typeText(page, "#title-input", products[location].title)
 
     await page.waitForTimeout(SLOW_MO)
     let element = await page.$('#who_made-input')
@@ -724,12 +747,12 @@ async function createNewListing(page, info) {
 
     await page.waitForTimeout(SLOW_MO)
 
-    await PuppUtils.typeText(page, "#taxonomy-search", info.category)
+    await PuppUtils.typeText(page, "#taxonomy-search", products[location].category)
     await page.waitForTimeout(2000)
     await page.keyboard.press('Enter')
 
-    await PuppUtils.typeText(page, "#description-text-area-input", info.description)
-    await PuppUtils.typeText(page, "#price_retail-input", info.price)
+    await PuppUtils.typeText(page, "#description-text-area-input", product.description)
+    await PuppUtils.typeText(page, "#price_retail-input", product.price)
     await PuppUtils.typeText(page, "#quantity_retail-input", "999")
     await PuppUtils.typeText(page, "#SKU-input", nanoid(10).replace(/[^a-zA-Z0-9]/g, ""))
     await PuppUtils.click(page, '#add_variations_button')
@@ -894,9 +917,9 @@ async function createNewListing(page, info) {
     //Nhap Price one item
     await page.waitForTimeout(SLOW_MO)
     await PuppUtils.click(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(1) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(1) input')
-    await PuppUtils.typeText(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(1) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(1) input', "8.99")
+    await PuppUtils.typeText(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(1) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(1) input', "4.99")
     await PuppUtils.click(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(1) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(2) input')
-    await PuppUtils.typeText(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(1) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(2) input', "3.99")
+    await PuppUtils.typeText(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(1) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(2) input', "1.99")
 
     await page.waitForTimeout(SLOW_MO)
     element = await page.evaluateHandle(() => {
@@ -926,16 +949,16 @@ async function createNewListing(page, info) {
     await page.waitForTimeout(SLOW_MO)
 
     await PuppUtils.click(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(2) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(1) input')
-    await PuppUtils.typeText(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(2) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(1) input', "19.99")
+    await PuppUtils.typeText(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(2) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(1) input', "9.99")
     await PuppUtils.click(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(2) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(2) input')
-    await PuppUtils.typeText(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(2) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(2) input', "10.99")
+    await PuppUtils.typeText(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(2) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(2) input', "2.99")
     await page.waitForTimeout(SLOW_MO)
 
     await PuppUtils.click(page, '[data-region="shipping-profiles"] button.wt-btn--outline')
     await page.waitForTimeout(2000)
     await PuppUtils.click(page, '[aria-label="Overlay warning that domestic shipping cost increases with this change"] button.wt-btn.wt-btn--filled')
     await page.waitForTimeout(SLOW_MO)
-    await PuppUtils.typeText(page, 'input[placeholder="Name of the profile"]', "CANVAS CC")
+    await PuppUtils.typeText(page, 'input[placeholder="Name of the profile"]', "MUG CC")
 
     await PuppUtils.click(page, '[aria-label="Overlay to save an unshared profile"] button.wt-btn--filled')
     await page.waitForTimeout(3000)
@@ -1083,6 +1106,10 @@ function getDateOfBirth(num, info) {
 
 function saveInfos() {
     fs.writeFileSync('./input/infos.tsv', d3.tsvFormat(infos), 'utf8')
+}
+
+function saveProduct() {
+    fs.writeFileSync('./input/products.tsv', d3.tsvFormat(products), 'utf8')
 }
 
 async function confirmRecoveryOption(page) {
