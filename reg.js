@@ -418,6 +418,7 @@ async function onNextStep(page, info) {
         infos[iNumCurrentAccount].status = "WaitForwardEmail"
         products[getProductLocation()].isUsed = '1'
         saveInfos()
+        saveProduct()
         // await forwardEmail(info)
         await finishReg(info)
         return
