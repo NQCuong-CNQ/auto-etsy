@@ -38,7 +38,7 @@ main()
 async function main() {
     try {
         const tsvInfo = d3.tsvParse(fs.readFileSync('./input/infos.tsv', 'utf-8'))
-        const tsvProductt = d3.tsvParse(fs.readFileSync('./input/product.tsv', 'utf-8'))
+        const tsvProductt = d3.tsvParse(fs.readFileSync('./input/products.tsv', 'utf-8'))
 
         for (const temp in tsvInfo) {
             if (temp == 'columns') {
@@ -277,6 +277,7 @@ async function runBrowser(ws, info) {
             await finishReg(info)
         } else {
             await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin', { waitUntil: 'domcontentloaded' })
+            console.log('launch success')
             await checkLoginProgress(page, info)
         }
         return
@@ -292,9 +293,9 @@ async function runBrowser(ws, info) {
 }
 
 async function checkLoginProgress(page, info) {
-    console.log('launch success')
     await page.waitForTimeout(10000)
     if (page.url().includes('https://mail.google.com/mail/u/')) {
+        await page.waitForTimeout(5000)
         if (await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')) {
             await PuppUtils.click(page, '.T-I.T-I-JN:last-child')
             await page.waitForTimeout(SLOW_MO)
@@ -416,9 +417,8 @@ async function onNextStep(page, info) {
         var datetime = new Date();
         infos[iNumCurrentAccount].dayREG = datetime.toISOString().slice(0, 10)
         infos[iNumCurrentAccount].status = "WaitForwardEmail"
-        products[getProductLocation()].isUsed = '1'
+        
         saveInfos()
-        saveProduct()
         // await forwardEmail(info)
         await finishReg(info)
         return
@@ -720,7 +720,7 @@ async function createNewListing(page, info) {
     await PuppUtils.typeText(page, "#title-input", products[location].title)
 
     await page.waitForTimeout(SLOW_MO)
-    let element = await page.$('#who_made-input')
+    element = await page.$('#who_made-input')
     await element.click()
     await page.evaluate(() => {
         $(`#who_made-input`).get(0).size = 1000
@@ -752,8 +752,8 @@ async function createNewListing(page, info) {
     await page.waitForTimeout(2000)
     await page.keyboard.press('Enter')
 
-    await PuppUtils.typeText(page, "#description-text-area-input", product.description)
-    await PuppUtils.typeText(page, "#price_retail-input", product.price)
+    await PuppUtils.typeText(page, "#description-text-area-input", products[location].description)
+    await PuppUtils.typeText(page, "#price_retail-input", products[location].price)
     await PuppUtils.typeText(page, "#quantity_retail-input", "999")
     await PuppUtils.typeText(page, "#SKU-input", nanoid(10).replace(/[^a-zA-Z0-9]/g, ""))
     await PuppUtils.click(page, '#add_variations_button')
@@ -969,6 +969,9 @@ async function createNewListing(page, info) {
     if (await PuppUtils.jsIsSelectorExisted(page, '[data-region="listings-container"] a')) {
         await PuppUtils.click(page, '[data-subway-next="true"] ')
     }
+
+    products[getProductLocation()].isUsed = '1'
+    saveProduct()
 }
 
 async function submitBussinessInfo(page, info) {
