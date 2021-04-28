@@ -1,44 +1,163 @@
-const puppeteer = require('puppeteer');
-const http = require('http');
+const request = require('request')
+var fs = require('fs')
+
+var imgs = ["https://morelifesmart.com/wp-content/uploads/2021/02/7f55a1320a9e744176762d0f903989b7.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/9fc9300b239983aaa7b6cc906c0d3fc7.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/ee0116a57d7706c14ba6591135835ed3.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/00b5e44da203fb079685f3e0cadc8739.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/ba5a6d278258486d3d6cea47bb84a5a9.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/523c5eb0433e50177624834ca7b0e355.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/aabdf4a0134f2749d1cfb5568b85cdac.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/66bdde6bd7e1721121388b21bc89fef5.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/3adae71eeb87dedd4dc51d53f0c7cafa.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/9ccde6a8ef241280f1933dd2ed45d60a.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/0b406c4349e7f512fb49dde9ff6adb21.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/6109e690142f68a679a77b0dee726a60.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/b6cad26db2934b573991c6619b6bed5d.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/e56e1d283d0ecc45763160544e20540a.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/d6ecae4db1ce34a6102416d45e5bfd36.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/9e338745ad8fb0e5e022e5457d1a6462.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/a178795aca4c8196ced2d98fd3fabf81.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/64978478650ab890a7e1c4f9a51b955a.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/e24861171d871efeea0650e9a29c96e6.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/ef3034a8f18a4dcd83ae7e67a931d6b9.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/a2dd816224472b56ec169e400fef6b53.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/dc8c16721ba964d205c16cfd06d82f92.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/cfaf454e52a4fb0389200b56d2595f3c.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2795602496_gdk3.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2413969393_d8zy.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2328835908_dblu.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2323846358_c58v.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2856162481_4l97.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2856156961_e1l9.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2805256214_ea5g.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2795596788_g969.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2795573130_em4v.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2497054439_5cto.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2335460346_3u1v.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2328748456_rapm.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2409274665_i1lt.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2469697321_8i9n.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2422092584_saf6.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2371407187_8d6l.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2423995312_acl6.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2359993890_jm97.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2423997220_bldq.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2497029533_9dkt.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2381103402_tj7d.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2438480706_2mbv.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/5a46db8e866ee36aa487a04d152da46e.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/9bd4dd1e646d1a84738ff299787796f3.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2449396386_93rg.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/6aa008535cafa6a8b3cb3a9b2750f5a7.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2469624507_8a25.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2899027075_3fum.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2756117865_jelo.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2852881543_kvhr.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2739693050_222w-scaled.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2886046723_890w.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2878596443_qtoy.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2828148618_3fp5.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2770192456_f2ew.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2822790376_bfxh.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2867856485_u479.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2820099034_stdz.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2770419837_nz36.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2862665669_lmon.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2805204302_39hy.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2805197416_rqlv.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2840915135_f4kb.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2838203977_llpe.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2779252946_dddq.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2835957001_kcfv.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2788103066_a0ae.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2779252946_dddq-1.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2817877279_nm08.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2756898148_ojd3.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2762855454_95ia.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2808578697_iihz.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2804664535_9tf4.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2756898542_swh4.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2756898348_lilt.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2756898012_sbeq.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2753772842_fddg.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2801466875_nfdi.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2752788556_sfud.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2752788490_ld0n.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2751579248_78qb.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2750101670_ktxu.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2797471977_rop8.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2796177027_6nq4.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2748468908_tb30.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2796068427_cr6b.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2667178582_2q3g.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2733755620_5e0j.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2785615411_nqzc.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/il_fullxfull.2667178736_lc6e.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/Animal-Raccoon-Vintage-You-CAn-Do-Great-Things-.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/02/Cat-Best-Cat-Dad-.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Dog-Custom-5-things-about-this-woman-.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Family-Cat-Mom-.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/family-FATHERS-DAY-GIFT-MUG.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Family-I-Work-For-My-Grandkids.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Family-Custom-Grandkids-Mug-.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/e7b48bb3bb68c90adbe6fb6aa2d88576.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/1e41f4c121e2c3ae1fffa831d9f9a759.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/60371e6c76c4de60489d5987.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/6032936576c4de6048f3d39e.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/mockup-mug-1.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/THuy.11Oz.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Linh.Black-15-Oz-Mug.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Mockup-Mug-1-1.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Mockup-Mug-2.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/To-My-Daughter-In-law-mug.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Linh.White-11-Oz-Mug.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Ngan.White-15-Oz-Mug-Scarlett-and-Chris.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Thuy.White-15-Oz-Mug.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/TRan.white-15.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Linh.Black-15-Oz-Mug-1.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Tran15Oz.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/TRanBlack-15-Oz-Mug-Chief-301.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Thuy.15Oz.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Ngan.Black-15-Oz-Mug.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Thuy.White-11-Oz-Mug.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Thuy.white-15oz-doi-thanh-MOTHER-2013.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/TRan.white-11.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/1-anh-co-4-mockup-tay-cam-do-hongxanhden.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Mockup-Mug-11oz-new1.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Linh.black-15oz.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/de-custom-Names-va-Your-Image-Our-First-Mothers-Day-Together-From-Baby-Mug-Gift-For-Frist-Time-Mom.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Linh.de-Custom-Image-Personalised-Grandma-Inside-Mummys-Tummy-Bump-Ultrasound-Mug.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Tran.White-15-Oz-Mug-Jack-The-RxA-IE-Team.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Mk-Mug-White-11oz.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Tumbler-10oz.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Thuy.15Oz-1.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Linh.black-11oz-2-file-design.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/Linh.white-11-oz.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/08fbf35396dc7a8df765909f76662a8e.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/a00c1251a8001469127abdccace611d6.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/771d03196e21f5d17f9a2adaf8ebaa05.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/c88cfb6281896b5fcff75a47ad459b4a.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/03/81b83225dacab1f50c895faf9b4fa649.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/04/b6ea5eaa32406a6ac064f18851088a48.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/04/1426eda2f5d60b49f681d2bd40dbb5e7.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/04/f2472dc6105cf9aa9e28428a38a2d37e.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/04/a884c9654214084cafa276a7a7c76eb0.jpg",
+"https://morelifesmart.com/wp-content/uploads/2021/04/bGFtLW1vY2t1cC12YS1tYXQtc2F1LWdoaS10aGUtbG92ZS1vZi1hLWZhbWlseS1pcy1saWZlLWdyZWF0ZXN0LWJsZXNzaW5n.jpg"
+]
 
 
-async function startProfile() {
-  let profileId = 'db11261d-aaa2-4a5e-9ffe-00fc570c5825';
-  let mlaPort = 35000;
+var download = function(uri, filename, callback){
+  request.head(uri, function(err, res, body){
+    // console.log('content-type:', res.headers['content-type']);
+    // console.log('content-length:', res.headers['content-length']);
+    request(uri).pipe(fs.createWriteStream(filename)).on('close', callback);
+  });
+};
 
-  http.get(`http://127.0.0.1:${mlaPort}/api/v1/profile/start?automation=true&puppeteer=true&profileId=${profileId}`, (resp) => {
-    let data = '';
-    let ws = '';
-
-    resp.on('data', (chunk) => {
-      data += chunk;
-    });
-
-    resp.on('end', () => {
-      try {
-        ws = JSON.parse(data);
-      } catch (err) {
-        console.log(err);
-      }
-      if (typeof ws === 'object' && ws.hasOwnProperty('value')) {
-        console.log(`Browser websocket endpoint: ${ws.value}`);
-        run(ws.value);
-      }
-    });
-
-  }).on("error", (err) => {
-    console.log(err.message);
+for(var i = 0; i < imgs.length; i++){
+  download(imgs[i], i + ".jpg", function(){
+    console.log('done');
   });
 }
-async function run(ws) {
-  try {
-    const browser = await puppeteer.connect({ browserWSEndpoint: ws, defaultViewport: null });
-    const page = await browser.newPage();
-    await page.goto('https://multilogin.com');
-    // await browser.close();
-  } catch (err) {
-    console.log(err.message);
-  }
-}
 
-startProfile()
