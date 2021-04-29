@@ -4,10 +4,16 @@ puppeteer.use(StealthPlugin())
 const d3 = require('d3-dsv')
 const fs = require('fs')
 const PuppUtils = require('./lib/PuppUtils')
-const fetch = require('node-fetch')
+var robot = require("robotjs")
 const { nanoid } = require('nanoid');
 const { exec } = require('child_process')
 const http = require('http')
+
+robot.setMouseDelay(1)
+var isMouseMove = false
+var screenSize = robot.getScreenSize()
+var height = screenSize.height - 40
+var width = screenSize.width
 
 const SLOW_MO = 1000
 var browser
@@ -53,16 +59,27 @@ async function main() {
             }
             products[Number(temp)] = tsvProductt[temp]
         }
-        
+
+        moveTheMouse()
         await checkAccountValid()
     } catch (err) {
         console.error(err)
     }
 }
 
-function getProductLocation(){
-    for(let i = 0; i < products.length; i++) {
-        if(products[i].isUsed == ''){
+function moveTheMouse(){
+    if(isMouseMove){
+        var x = Math.random() * width
+        var y = Math.random() * height
+        robot.moveMouseSmooth(x, y)
+    }
+    sleep(1000)
+    moveTheMouse()
+}
+
+function getProductLocation() {
+    for (let i = 0; i < products.length; i++) {
+        if (products[i].isUsed == '') {
             return i
         }
     }
@@ -71,11 +88,11 @@ function getProductLocation(){
 async function checkAccountValid() {
     if (iNumCurrentAccount < infos.length) {
         let info = infos[iNumCurrentAccount]
-        
+
         if (info.status == "Suspended" || info.status == "Success" || info.status == "Abandon") {
             iNumCurrentAccount++
             await checkAccountValid()
-        } else if (info.status == "WaitForwardEmail" || info.ip != ""){
+        } else if (info.status == "WaitForwardEmail" || info.ip != "") {
             console.log(info.mail)
             await startRegAccount(info)
         } else {
@@ -272,12 +289,13 @@ async function runBrowser(ws, info) {
         const page = await browser.newPage()
         await page.waitForTimeout(SLOW_MO)
         await page.setDefaultNavigationTimeout(0)
-        if (info.status == "WaitForwardEmail"){
+        if (info.status == "WaitForwardEmail") {
             await forwardEmail(info)
             await finishReg(info)
         } else {
             await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin', { waitUntil: 'domcontentloaded' })
             console.log('launch success')
+            isMouseMove = true
             await checkLoginProgress(page, info)
         }
         return
@@ -296,7 +314,7 @@ async function checkLoginProgress(page, info) {
     await page.waitForTimeout(10000)
     if (page.url().includes('https://mail.google.com/mail/u/')) {
         await page.waitForTimeout(6000)
-        if (await PuppUtils.isElementVisbile(page, '[role="dialog"][aria-live="polite"]')){
+        if (await PuppUtils.isElementVisbile(page, '[role="dialog"][aria-live="polite"]')) {
             await PuppUtils.click(page, '[role="dialog"][aria-live="polite"]>div:nth-child(2)>div>div:nth-child(2)>div:nth-child(3)>label')
             await PuppUtils.click(page, '[name="data_consent_dialog_next"]')
             await page.waitForTimeout(SLOW_MO)
@@ -305,7 +323,7 @@ async function checkLoginProgress(page, info) {
         } if (await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')) {
             await PuppUtils.click(page, '.T-I.T-I-JN:last-child')
             await page.waitForTimeout(3000)
-        } 
+        }
         await loginEtsy(page, info)
         return
     } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')) {
@@ -316,7 +334,7 @@ async function checkLoginProgress(page, info) {
         await confirmRecoveryEmail(page, info)
     } else if (page.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
         await confirmRecoveryOption(page)
-    }else {
+    } else {
         await loginGoogle(page, info)
     }
     checkLoginProgress(page, info)
@@ -324,12 +342,12 @@ async function checkLoginProgress(page, info) {
 
 async function confirmRecoveryEmail(page, info) {
 
-    if(await PuppUtils.isElementVisbile(page, '[method="post"] li:nth-child(3)')){
+    if (await PuppUtils.isElementVisbile(page, '[method="post"] li:nth-child(3)')) {
         await PuppUtils.click(page, '[method="post"] li:nth-child(2)')
     } else {
         await PuppUtils.click(page, '[method="post"] li:nth-child(1)')
     }
-    
+
     await page.waitForTimeout(3000)
     await PuppUtils.typeText(page, '#knowledge-preregistered-email-response', info.recoveryMail)
     await PuppUtils.click(page, 'button[type="button"]:first-child')
@@ -401,7 +419,11 @@ async function loginEtsy(page, info) {
 }
 
 async function registerShop(page, info) {
-    await page.goto('https://www.etsy.com/your/shop/create?us_sell_create_value', { waitUntil: 'domcontentloaded' })
+    await PuppUtils.click(page, 'button.wt-menu__trigger')
+    await page.waitForTimeout(2000)
+    await PuppUtils.click(page, '[role="menu"].ge-you-menu-dimensions>ul>li:nth-child(6)')
+    await page.waitForTimeout(6000)
+    await PuppUtils.click(page, '.panel a[data-event-attributes].create-shop-action')
     await page.waitForTimeout(2000)
     onNextStep(page, info)
 }
@@ -429,7 +451,7 @@ async function onNextStep(page, info) {
         var datetime = new Date();
         infos[iNumCurrentAccount].dayREG = datetime.toISOString().slice(0, 10)
         infos[iNumCurrentAccount].status = "WaitForwardEmail"
-        
+
         saveInfos()
         await forwardEmail(info)
         await finishReg(info)
@@ -445,15 +467,16 @@ async function onNextStep(page, info) {
 
 async function finishReg(info) {
     // if(info.status == "Success"){
-        iNumCurrentAccount++
-        await browser.close();
-        console.log("done!")
-        await checkAccountValid()
+    isMouseMove = false
+    iNumCurrentAccount++
+    await browser.close();
+    console.log("done!")
+    await checkAccountValid()
     // }
     return
 }
 
-async function forwardEmailProcess(page2, info){
+async function forwardEmailProcess(page2, info) {
     await page2.waitForTimeout(13000)
     if (page2.url().includes('https://myaccount.google.com/signinoptions/recovery-options-collection?')) {
         await confirmRecoveryOption(page2)
@@ -463,9 +486,9 @@ async function forwardEmailProcess(page2, info){
         await addGoogleChip(page2)
     } if (page2.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
         await confirmRecoveryEmail(page2, info)
-    } if (await page2.url().includes('https://mail.google.com/mail/u/0/#settings/fwdandpop')){
+    } if (await page2.url().includes('https://mail.google.com/mail/u/0/#settings/fwdandpop')) {
         await page2.waitForTimeout(13000)
-        if (await PuppUtils.isElementVisbile(page2, '[role="dialog"][aria-live="polite"]')){
+        if (await PuppUtils.isElementVisbile(page2, '[role="dialog"][aria-live="polite"]')) {
             await PuppUtils.click(page2, '[role="dialog"][aria-live="polite"]>div:nth-child(2)>div>div:nth-child(2)>div:nth-child(3)>label')
             await PuppUtils.click(page2, '[name="data_consent_dialog_next"]')
             await page2.waitForTimeout(SLOW_MO)
@@ -474,10 +497,10 @@ async function forwardEmailProcess(page2, info){
         } if (await PuppUtils.isElementVisbile(page2, '[role="alertdialog"]')) {
             await PuppUtils.click(page2, '.T-I.T-I-JN:last-child')
             await page2.waitForTimeout(3000)
-        } if (await PuppUtils.isElementVisbile(page2, '#link_enable_notifications')){
+        } if (await PuppUtils.isElementVisbile(page2, '#link_enable_notifications')) {
             await PuppUtils.click(page2, '#link_enable_notifications')
             await page2.waitForTimeout(3000)
-        } 
+        }
         return
     }
     await forwardEmailProcess(page2, info)
@@ -491,7 +514,7 @@ async function forwardEmail(info) {
     const page2 = await browser.newPage()
     await page2.goto('https://mail.google.com/mail/u/0/#settings/fwdandpop')
     await forwardEmailProcess(page2, info)
-    
+
     await page2.waitForTimeout(SLOW_MO)
     await PuppUtils.click(page2, 'input[value="Add a forwarding address"]')
     await page2.waitForTimeout(2000)
@@ -668,7 +691,7 @@ async function submitShoppreferences(page, info) {
 
     await page.waitForTimeout(SLOW_MO)
     await page.evaluate(() => {
-        $('[name="intention"]:eq(0)').click()
+        $('[name="intention"]:eq(1)').click()
     })
 
     await PuppUtils.click(page, 'button[data-subway-next="true"]')
@@ -683,18 +706,25 @@ async function submitShopName(page, info) {
 
 function capitalizeLetter(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
-  }
+}
 
 async function generateShopName(page, info, reGen = 0) {
     try {
         let shopName = ""
         shopName = capitalizeLetter(info.firstName).trim() + capitalizeLetter(info.lastName).trim()
         if (reGen == 1) {
-            shopName += getFirstLetterShopName(info)
+            shopName += "Shop"
         } else if (reGen == 2) {
             shopName += getFirstLetterShopName(info) + "Shop"
-        } else if (reGen >= 3) {
-            shopName += getFirstLetterShopName(info) + "Shop" + nanoid(2).replace(/[^a-zA-Z0-9]/g, "")
+        } else if (reGen == 3) {
+            shopName += "Store"
+        } else if (reGen == 4) {
+            shopName += getFirstLetterShopName(info) + "Store"
+        } else if (reGen == 5) {
+            shopName += getFirstLetterShopName(info) + nanoid(2).replace(/[^a-zA-Z0-9]/g, "") + "Shop"
+        }
+        if (shopName.length >= 20) {
+            shopName = shopName.substring(0, 19);
         }
 
         await PuppUtils.typeText(page, '#onboarding-shop-name-input', shopName)
@@ -723,8 +753,8 @@ function getFirstLetterShopName(info) {
 }
 
 async function createNewListing(page, info) {
-    await page.goto(`https://www.etsy.com/your/shops/${info.shopName}/onboarding/listings/create`, { waitUntil: 'domcontentloaded' })
-    await page.waitForTimeout(SLOW_MO)
+    await PuppUtils.click(page, '[data-region="listings-container"] > div > div')
+    await page.waitForTimeout(6000)
 
     let location = getProductLocation()
     let imagesFolderName = './input/img'
@@ -773,7 +803,7 @@ async function createNewListing(page, info) {
     await PuppUtils.typeText(page, "#description-text-area-input", products[location].description)
     await PuppUtils.typeText(page, "#price_retail-input", products[location].price)
     await PuppUtils.typeText(page, "#quantity_retail-input", "999")
-    await PuppUtils.typeText(page, "#SKU-input", nanoid(10).replace(/[^a-zA-Z0-9]/g, ""))
+    // await PuppUtils.typeText(page, "#SKU-input", nanoid(10).replace(/[^a-zA-Z0-9]/g, ""))
     await PuppUtils.click(page, '#add_variations_button')
 
     await page.waitForTimeout(SLOW_MO)
