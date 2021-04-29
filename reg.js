@@ -266,7 +266,7 @@ async function runBrowser(ws, info) {
             defaultViewport: null,
             slowMo: 50,
             headless: false,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            args: ['--start-fullscreen', '--no-sandbox', '--disable-setuid-sandbox']
         })
         sleep(5000)
         const page = await browser.newPage()
@@ -295,11 +295,17 @@ async function runBrowser(ws, info) {
 async function checkLoginProgress(page, info) {
     await page.waitForTimeout(10000)
     if (page.url().includes('https://mail.google.com/mail/u/')) {
-        await page.waitForTimeout(5000)
-        if (await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')) {
-            await PuppUtils.click(page, '.T-I.T-I-JN:last-child')
+        await page.waitForTimeout(6000)
+        if (await PuppUtils.isElementVisbile(page, '[role="dialog"][aria-live="polite"]')){
+            await PuppUtils.click(page, '[role="dialog"][aria-live="polite"]>div:nth-child(2)>div>div:nth-child(2)>div:nth-child(3)>label')
+            await PuppUtils.click(page, '[name="data_consent_dialog_next"]')
             await page.waitForTimeout(SLOW_MO)
-        }
+            await PuppUtils.click(page, '[name="turn_off_in_product"]')
+            await page.waitForTimeout(3000)
+        } if (await PuppUtils.isElementVisbile(page, '.T-I.T-I-JN')) {
+            await PuppUtils.click(page, '.T-I.T-I-JN:last-child')
+            await page.waitForTimeout(3000)
+        } 
         await loginEtsy(page, info)
         return
     } else if (page.url().includes('https://myaccount.google.com/interstitials/birthday')) {
@@ -459,11 +465,19 @@ async function forwardEmailProcess(page2, info){
         await confirmRecoveryEmail(page2, info)
     } if (await page2.url().includes('https://mail.google.com/mail/u/0/#settings/fwdandpop')){
         await page2.waitForTimeout(13000)
-        if (await PuppUtils.isElementVisbile(page2, '[role="alertdialog"]')) {
+        if (await PuppUtils.isElementVisbile(page2, '[role="dialog"][aria-live="polite"]')){
+            await PuppUtils.click(page2, '[role="dialog"][aria-live="polite"]>div:nth-child(2)>div>div:nth-child(2)>div:nth-child(3)>label')
+            await PuppUtils.click(page2, '[name="data_consent_dialog_next"]')
+            await page2.waitForTimeout(SLOW_MO)
+            await PuppUtils.click(page2, '[name="turn_off_in_product"]')
+            await page2.waitForTimeout(3000)
+        } if (await PuppUtils.isElementVisbile(page2, '[role="alertdialog"]')) {
             await PuppUtils.click(page2, '.T-I.T-I-JN:last-child')
+            await page2.waitForTimeout(3000)
         } if (await PuppUtils.isElementVisbile(page2, '#link_enable_notifications')){
             await PuppUtils.click(page2, '#link_enable_notifications')
-        }
+            await page2.waitForTimeout(3000)
+        } 
         return
     }
     await forwardEmailProcess(page2, info)
