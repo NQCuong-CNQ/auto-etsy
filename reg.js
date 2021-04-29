@@ -8,6 +8,7 @@ var robot = require("robotjs")
 const { nanoid } = require('nanoid');
 const { exec } = require('child_process')
 const http = require('http')
+var randomWords = require('random-words')
 
 robot.setMouseDelay(1)
 var isMouseMove = false
@@ -67,8 +68,8 @@ async function main() {
     }
 }
 
-function moveTheMouse(){
-    if(isMouseMove){
+function moveTheMouse() {
+    if (isMouseMove) {
         var x = Math.random() * width
         var y = Math.random() * height
         robot.moveMouseSmooth(x, y)
@@ -800,7 +801,8 @@ async function createNewListing(page, info) {
     await page.waitForTimeout(2000)
     await page.keyboard.press('Enter')
 
-    await PuppUtils.typeText(page, "#description-text-area-input", products[location].description)
+    let ranWord = randomWords({ min: 10, max: 20 }).toString().replace(/,/g, " ")
+    await PuppUtils.typeText(page, "#description-text-area-input", products[location].description + ranWord)
     await PuppUtils.typeText(page, "#price_retail-input", products[location].price)
     await PuppUtils.typeText(page, "#quantity_retail-input", "999")
     // await PuppUtils.typeText(page, "#SKU-input", nanoid(10).replace(/[^a-zA-Z0-9]/g, ""))
