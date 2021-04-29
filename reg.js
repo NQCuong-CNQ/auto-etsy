@@ -61,21 +61,19 @@ async function main() {
             products[Number(temp)] = tsvProductt[temp]
         }
 
-        moveTheMouse()
         await checkAccountValid()
     } catch (err) {
         console.error(err)
     }
 }
 
-function moveTheMouse() {
-    if (isMouseMove) {
+async function moveTheMouse() {
+    if (1) {
         var x = Math.random() * width
         var y = Math.random() * height
         robot.moveMouseSmooth(x, y)
+        console.log(x)
     }
-    sleep(1000)
-    moveTheMouse()
 }
 
 function getProductLocation() {
