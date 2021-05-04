@@ -113,7 +113,7 @@ function sleep(ms) {
 }
 
 async function changeIp(info) {
-    // console.log("start toggle")
+    console.log("start toggle")
     // await toggleHome()
     // await toggleTetherSettings()
     // await toggleTab()
@@ -418,9 +418,14 @@ async function loginEtsy(page, info) {
 }
 
 async function registerShop(page, info) {
-    await PuppUtils.click(page, 'button.wt-menu__trigger')
+    await PuppUtils.click(page, '[data-ge-nav-event-name="gnav_show_user_menu"] button')
     await page.waitForTimeout(2000)
-    await PuppUtils.click(page, '[role="menu"].ge-you-menu-dimensions>ul>li:nth-child(6)')
+    if(await PuppUtils.isElementVisbile(page, '[role="menu"].ge-you-menu-dimensions>ul>li:nth-child(7)')){
+        await PuppUtils.click(page, '[role="menu"].ge-you-menu-dimensions>ul>li:nth-child(6)')
+    } else {
+        await page.goto('')
+    }
+    
     await page.waitForTimeout(6000)
     await PuppUtils.click(page, '.panel a[data-event-attributes].create-shop-action')
     await page.waitForTimeout(2000)
