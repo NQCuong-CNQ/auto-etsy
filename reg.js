@@ -11,7 +11,6 @@ const http = require('http')
 var randomWords = require('random-words')
 
 robot.setMouseDelay(1)
-var isMouseMove = false
 var screenSize = robot.getScreenSize()
 var height = screenSize.height - 40
 var width = screenSize.width
@@ -387,6 +386,7 @@ async function loginGoogle(page, info) {
 
 async function loginEtsy(page, info) {
     await page.goto('https://www.etsy.com')
+    await moveTheMouse()
     await page.waitForTimeout(8000)
     if (await PuppUtils.isElementVisbile(page, '.select-signin')) {
     } else {
@@ -406,7 +406,8 @@ async function loginEtsy(page, info) {
     await page.waitForTimeout(8000)
     await PuppUtils.click(newPage, '[data-identifier]')
 
-    await page.waitForTimeout(15000)
+    await page.waitForTimeout(13000)
+    await moveTheMouse()
     if (await PuppUtils.isElementVisbile(page, '[data-ge-nav-event-name="gnav_show_user_menu"]')) {
         await registerShop(page, info)
         return
@@ -422,17 +423,19 @@ async function registerShop(page, info) {
     await page.waitForTimeout(2000)
     if(await PuppUtils.isElementVisbile(page, '[role="menu"].ge-you-menu-dimensions>ul>li:nth-child(7)')){
         await PuppUtils.click(page, '[role="menu"].ge-you-menu-dimensions>ul>li:nth-child(6)')
+        await moveTheMouse()
     } else {
         await page.goto('')
     }
     
-    await page.waitForTimeout(6000)
+    await page.waitForTimeout(5000)
     await PuppUtils.click(page, '.panel a[data-event-attributes].create-shop-action')
     await page.waitForTimeout(2000)
     onNextStep(page, info)
 }
 
 async function onNextStep(page, info) {
+    await moveTheMouse()
     if (await checkStatusAccount(page)) {
         console.log("Suspended")
         await browser.close()
@@ -625,7 +628,7 @@ async function setupBilling(page, info) {
 
     await page.waitForTimeout(SLOW_MO)
     await PuppUtils.typeText(page, 'input[name="billing[zip]"]', info.zip)
-    await page.waitForTimeout(SLOW_MO)
+    await moveTheMouse()
 
     await PuppUtils.waitNextUrl(page, 'button[data-subway-final]')
 }
@@ -742,6 +745,7 @@ async function generateShopName(page, info, reGen = 0) {
             return Promise.resolve()
         } else {
             console.log('Available', shopName)
+            await moveTheMouse()
             infos[iNumCurrentAccount].nameShop = shopName
             saveInfos()
             return Promise.resolve()
@@ -767,7 +771,7 @@ async function createNewListing(page, info) {
     let imageFile = imagesFolderName + '/' + imageFiles[products[location].img]
     let element = await page.$("#listing-edit-image-upload")
     await element.uploadFile(imageFile)
-    await page.waitForTimeout(1500)
+    await moveTheMouse()
 
     await PuppUtils.typeText(page, "#title-input", products[location].title)
 
@@ -906,7 +910,8 @@ async function createNewListing(page, info) {
             }
         }
     }
-    await page.waitForTimeout(SLOW_MO)
+    
+    await moveTheMouse()
     element = await page.$('#profile_type')
     await element.click()
     await page.evaluate(() => {
@@ -1018,7 +1023,8 @@ async function createNewListing(page, info) {
     await page.waitForTimeout(3000)
 
     await PuppUtils.click(page, '.page-footer [data-save]')
-    await page.waitForTimeout(4000)
+    await page.waitForTimeout(3000)
+    await moveTheMouse()
     if (await PuppUtils.jsIsSelectorExisted(page, '[data-region="listings-container"] a')) {
         await PuppUtils.click(page, '[data-subway-next="true"] ')
     }
@@ -1122,6 +1128,7 @@ async function submitBussinessInfo(page, info) {
 
     await PuppUtils.typeText(page, '.address-container input[name="zip"]', info.zip)
     await PuppUtils.typeText(page, '.address-container input[name="phone"]', info.phone)
+    await moveTheMouse()
     await PuppUtils.click(page, 'button[data-ui="dc-submit"]')
 }
 
