@@ -292,6 +292,12 @@ async function runBrowser(ws, info) {
             await finishReg(info)
         } else {
             await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin', { waitUntil: 'domcontentloaded' })
+            robot.keyToggle('alt','down')
+            robot.keyToggle('tab','down')
+            robot.keyToggle('tab','up')
+            robot.keyToggle('tab','down')
+            robot.keyToggle('tab','up')
+            robot.keyToggle('alt','up')
             console.log('launch success')
             isMouseMove = true
             await checkLoginProgress(page, info)
@@ -421,16 +427,15 @@ async function loginEtsy(page, info) {
 async function registerShop(page, info) {
     await PuppUtils.click(page, '[data-ge-nav-event-name="gnav_show_user_menu"] button')
     await page.waitForTimeout(2000)
-    if(await PuppUtils.isElementVisbile(page, '[role="menu"].ge-you-menu-dimensions>ul>li:nth-child(7)')){
+    if (await PuppUtils.isElementVisbile(page, '[role="menu"].ge-you-menu-dimensions>ul>li:nth-child(7)')) {
         await PuppUtils.click(page, '[role="menu"].ge-you-menu-dimensions>ul>li:nth-child(6)')
         await moveTheMouse()
+        await page.waitForTimeout(5000)
+        await PuppUtils.click(page, '.panel a[data-event-attributes].create-shop-action')
+        await page.waitForTimeout(2000)
     } else {
-        await page.goto('')
+        await PuppUtils.click(page, 'a[aria-labelledby="ge-tooltip-label-shop"]')
     }
-    
-    await page.waitForTimeout(5000)
-    await PuppUtils.click(page, '.panel a[data-event-attributes].create-shop-action')
-    await page.waitForTimeout(2000)
     onNextStep(page, info)
 }
 
@@ -501,6 +506,10 @@ async function forwardEmailProcess(page2, info) {
             await page2.waitForTimeout(SLOW_MO)
             await PuppUtils.click(page2, '[name="turn_off_in_product"]')
             await page2.waitForTimeout(3000)
+            if(await PuppUtils.isElementVisbile(page2, '[aria-live="polite"] button[name="r"]')){
+                await PuppUtils.click(page2, '[aria-live="polite"] button[name="r"]')
+                await page2.waitForTimeout(8000)
+            }
         } if (await PuppUtils.isElementVisbile(page2, '[role="alertdialog"]')) {
             await PuppUtils.click(page2, '.T-I.T-I-JN:last-child')
             await page2.waitForTimeout(3000)
@@ -910,7 +919,7 @@ async function createNewListing(page, info) {
             }
         }
     }
-    
+
     await moveTheMouse()
     element = await page.$('#profile_type')
     await element.click()
@@ -1015,7 +1024,7 @@ async function createNewListing(page, info) {
 
     await PuppUtils.click(page, '[data-region="shipping-profiles"] button.wt-btn--outline')
     await page.waitForTimeout(2000)
-    await PuppUtils.click(page, '[aria-label="Overlay warning that domestic shipping cost increases with this change"] button.wt-btn.wt-btn--filled')
+    await PuppUtils.click(page, '[data-reactroot].wt-overlay--will-animate button.wt-btn.wt-btn--filled')
     await page.waitForTimeout(SLOW_MO)
     await PuppUtils.typeText(page, 'input[placeholder="Name of the profile"]', "MUG CC")
 
