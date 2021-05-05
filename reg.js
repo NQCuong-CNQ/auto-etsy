@@ -67,12 +67,11 @@ async function main() {
 }
 
 async function moveTheMouse() {
-    if (1) {
-        var x = Math.random() * width
-        var y = Math.random() * height
-        robot.moveMouseSmooth(x, y)
-        console.log(x)
-    }
+
+    var x = Math.random() * width / 10
+    var y = Math.random() * height / 10
+    robot.moveMouseSmooth(x, y)
+    console.log('Move mouse: ' + x + '-' + y)
 }
 
 function getProductLocation() {
@@ -292,12 +291,12 @@ async function runBrowser(ws, info) {
             await finishReg(info)
         } else {
             await page.goto('https://accounts.google.com/signin/v2/identifier?passive=1209600&continue=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&followup=https%3A%2F%2Faccounts.google.com%2Fb%2F1%2FAddMailService&flowName=GlifWebSignIn&flowEntry=ServiceLogin', { waitUntil: 'domcontentloaded' })
-            robot.keyToggle('alt','down')
-            robot.keyToggle('tab','down')
-            robot.keyToggle('tab','up')
-            robot.keyToggle('tab','down')
-            robot.keyToggle('tab','up')
-            robot.keyToggle('alt','up')
+            robot.keyToggle('alt', 'down')
+            robot.keyToggle('tab', 'down')
+            robot.keyToggle('tab', 'up')
+            robot.keyToggle('tab', 'down')
+            robot.keyToggle('tab', 'up')
+            robot.keyToggle('alt', 'up')
             console.log('launch success')
             isMouseMove = true
             await checkLoginProgress(page, info)
@@ -353,7 +352,7 @@ async function confirmRecoveryEmail(page, info) {
     }
 
     await page.waitForTimeout(3000)
-    await PuppUtils.typeText(page, '#knowledge-preregistered-email-response', info.recoveryMail)
+    await typeLikeHuman(page, '#knowledge-preregistered-email-response', info.recoveryMail)
     await PuppUtils.click(page, 'button[type="button"]:first-child')
 }
 
@@ -362,7 +361,7 @@ async function addGoogleChip(page) {
 }
 
 async function addGoogleBirthday(page, info) {
-    await PuppUtils.typeText(page, 'input[placeholder="DD"]', getDateOfBirth(1, info).toString())
+    await typeLikeHuman(page, 'input[placeholder="DD"]', getDateOfBirth(1, info).toString())
 
     let element = await page.$(`div[role="combobox"]`)
     await element.click()
@@ -372,7 +371,7 @@ async function addGoogleBirthday(page, info) {
         await page.keyboard.press('ArrowDown', 500)
     } await page.keyboard.press('Enter', 500)
 
-    await PuppUtils.typeText(page, 'input[placeholder="YYYY"]', getDateOfBirth(2, info).toString())
+    await typeLikeHuman(page, 'input[placeholder="YYYY"]', getDateOfBirth(2, info).toString())
     await page.waitForTimeout(SLOW_MO)
     await PuppUtils.click(page, 'button:first-child')
     await page.waitForTimeout(2000)
@@ -382,11 +381,11 @@ async function addGoogleBirthday(page, info) {
 }
 
 async function loginGoogle(page, info) {
-    await PuppUtils.typeText(page, '#identifierId', info.mail.trim().toLowerCase())
+    await typeLikeHuman(page, '#identifierId', info.mail.trim().toLowerCase())
     await PuppUtils.waitNextUrl(page, '#identifierNext')
     await PuppUtils.jsWaitForSelector(page, '[name="password"]', 3000)
     await page.waitForTimeout(3000)
-    await PuppUtils.typeText(page, '[name="password"]', info.password.trim())
+    await typeLikeHuman(page, '[name="password"]', info.password.trim())
     await PuppUtils.waitNextUrl(page, '#passwordNext')
 }
 
@@ -506,7 +505,7 @@ async function forwardEmailProcess(page2, info) {
             await page2.waitForTimeout(SLOW_MO)
             await PuppUtils.click(page2, '[name="turn_off_in_product"]')
             await page2.waitForTimeout(3000)
-            if(await PuppUtils.isElementVisbile(page2, '[aria-live="polite"] button[name="r"]')){
+            if (await PuppUtils.isElementVisbile(page2, '[aria-live="polite"] button[name="r"]')) {
                 await PuppUtils.click(page2, '[aria-live="polite"] button[name="r"]')
                 await page2.waitForTimeout(8000)
             }
@@ -534,7 +533,7 @@ async function forwardEmail(info) {
     await page2.waitForTimeout(SLOW_MO)
     await PuppUtils.click(page2, 'input[value="Add a forwarding address"]')
     await page2.waitForTimeout(2000)
-    await PuppUtils.typeText(page2, '[role="alertdialog"] input', forwardEmail)
+    await typeLikeHuman(page2, '[role="alertdialog"] input', forwardEmail)
 
     const newPagePromise = new Promise(x => browser.once('targetcreated', target => x(target.page())))
     await PuppUtils.click(page2, '[role="alertdialog"] button[name="next"]')
@@ -549,18 +548,18 @@ async function forwardEmail(info) {
     await page2.goto('https://accounts.google.com/AddSession?hl=en&continue=https://mail.google.com/mail&service=mail&ec=GAlAFw', { waitUntil: 'domcontentloaded' })
     await page2.waitForTimeout(3000)
 
-    await PuppUtils.typeText(page2, '#identifierId', forwardEmail.trim())
+    await typeLikeHuman(page2, '#identifierId', forwardEmail.trim())
     await PuppUtils.waitNextUrl(page2, '#identifierNext')
     await PuppUtils.jsWaitForSelector(page2, '[name="password"]', 4000)
     await page2.waitForTimeout(5000)
-    await PuppUtils.typeText(page2, '[name="password"]', passForward.trim())
+    await typeLikeHuman(page2, '[name="password"]', passForward.trim())
     await PuppUtils.click(page2, '#passwordNext')
 
     await page2.waitForTimeout(3000)
     if (page2.url().includes('https://accounts.google.com/signin/v2/challenge/selection')) {
         await PuppUtils.click(page2, 'li:first-child')
         await page2.waitForTimeout(3000)
-        await PuppUtils.typeText(page2, '#knowledge-preregistered-email-response', recoveryForwardMail.trim())
+        await typeLikeHuman(page2, '#knowledge-preregistered-email-response', recoveryForwardMail.trim())
         await PuppUtils.click(page2, 'button[type="button"]:first-child')
     }
     await page2.waitForTimeout(18000)
@@ -580,7 +579,7 @@ async function forwardEmail(info) {
     await page2.bringToFront()
     await page2.waitForTimeout(13000)
 
-    await PuppUtils.typeText(page2, 'input[act="verifyText"]', getCodeForward(res))
+    await typeLikeHuman(page2, 'input[act="verifyText"]', getCodeForward(res))
     await PuppUtils.click(page2, 'input[value="Verify"]')
     await page2.waitForTimeout(2000)
     await PuppUtils.click(page2, 'input[value="1"]:first-child')
@@ -597,7 +596,7 @@ function getCodeForward(codeForward) {
 }
 
 async function setupBilling(page, info) {
-    await PuppUtils.typeText(page, '#billing-cc-num', getCreditCard(info.card, 0))
+    await typeLikeHuman(page, '#billing-cc-num', getCreditCard(info.card, 0))
 
     await page.waitForTimeout(SLOW_MO)
     element = await page.$('#billing-cc-exp-mon')
@@ -620,10 +619,10 @@ async function setupBilling(page, info) {
     await element.click()
 
     await page.waitForTimeout(SLOW_MO)
-    await PuppUtils.typeText(page, '#billing-cc-ccv', getCreditCard(info.card, 3))
-    await PuppUtils.typeText(page, '#billing-name', capitalizeLetter(info.firstName) + " " + capitalizeLetter(info.middleName) + " " + capitalizeLetter(info.lastName))
-    await PuppUtils.typeText(page, 'input[name="billing[address]"]', info.address)
-    await PuppUtils.typeText(page, 'input[name="billing[city]"]', capitalizeLetter(info.city))
+    await typeLikeHuman(page, '#billing-cc-ccv', getCreditCard(info.card, 3))
+    await typeLikeHuman(page, '#billing-name', capitalizeLetter(info.firstName) + " " + capitalizeLetter(info.middleName) + " " + capitalizeLetter(info.lastName))
+    await typeLikeHuman(page, 'input[name="billing[address]"]', info.address)
+    await typeLikeHuman(page, 'input[name="billing[city]"]', capitalizeLetter(info.city))
 
     await page.waitForTimeout(SLOW_MO)
     element = await page.$('[name="billing[state]"]')
@@ -636,7 +635,7 @@ async function setupBilling(page, info) {
     await element.click()
 
     await page.waitForTimeout(SLOW_MO)
-    await PuppUtils.typeText(page, 'input[name="billing[zip]"]', info.zip)
+    await typeLikeHuman(page, 'input[name="billing[zip]"]', info.zip)
     await moveTheMouse()
 
     await PuppUtils.waitNextUrl(page, 'button[data-subway-final]')
@@ -743,7 +742,7 @@ async function generateShopName(page, info, reGen = 0) {
             shopName = shopName.substring(0, 19);
         }
 
-        await PuppUtils.typeText(page, '#onboarding-shop-name-input', shopName)
+        await typeLikeHuman(page, '#onboarding-shop-name-input', shopName)
         await PuppUtils.click(page, '[data-action="check-availability"]')
         await page.waitForTimeout(1500)
 
@@ -782,7 +781,7 @@ async function createNewListing(page, info) {
     await element.uploadFile(imageFile)
     await moveTheMouse()
 
-    await PuppUtils.typeText(page, "#title-input", products[location].title)
+    await typeLikeHuman(page, "#title-input", products[location].title)
 
     await page.waitForTimeout(SLOW_MO)
     element = await page.$('#who_made-input')
@@ -813,15 +812,15 @@ async function createNewListing(page, info) {
 
     await page.waitForTimeout(SLOW_MO)
 
-    await PuppUtils.typeText(page, "#taxonomy-search", products[location].category)
+    await typeLikeHuman(page, "#taxonomy-search", products[location].category)
     await page.waitForTimeout(2000)
     await page.keyboard.press('Enter')
 
     let ranWord = randomWords({ min: 10, max: 20 }).toString().replace(/,/g, " ")
-    await PuppUtils.typeText(page, "#description-text-area-input", products[location].description + ranWord)
-    await PuppUtils.typeText(page, "#price_retail-input", products[location].price)
-    await PuppUtils.typeText(page, "#quantity_retail-input", "999")
-    // await PuppUtils.typeText(page, "#SKU-input", nanoid(10).replace(/[^a-zA-Z0-9]/g, ""))
+    await typeLikeHuman(page, "#description-text-area-input", products[location].description + ranWord)
+    await typeLikeHuman(page, "#price_retail-input", products[location].price)
+    await typeLikeHuman(page, "#quantity_retail-input", "999")
+    // await typeLikeHuman(page, "#SKU-input", nanoid(10).replace(/[^a-zA-Z0-9]/g, ""))
     await PuppUtils.click(page, '#add_variations_button')
 
     await page.waitForTimeout(SLOW_MO)
@@ -847,7 +846,7 @@ async function createNewListing(page, info) {
         await element.click()
 
         await page.waitForTimeout(SLOW_MO)
-        await PuppUtils.typeText(page, '[name="custom-property-input"]', variationType)
+        await typeLikeHuman(page, '[name="custom-property-input"]', variationType)
         element = await page.evaluateHandle(() => {
             return $(`[name="variation_property"]`).parent().parent().find('[name="add-custom"]')[0]
         })
@@ -939,7 +938,7 @@ async function createNewListing(page, info) {
     element = await page.$('#shipping_country [value="209"]')
     await element.click()
     await page.waitForTimeout(SLOW_MO)
-    await PuppUtils.typeText(page, '#origin_postal_code', "90001")
+    await typeLikeHuman(page, '#origin_postal_code', "90001")
 
     await page.waitForTimeout(SLOW_MO)
     element = await page.$('#processing_time_select')
@@ -985,9 +984,9 @@ async function createNewListing(page, info) {
     //Nhap Price one item
     await page.waitForTimeout(SLOW_MO)
     await PuppUtils.click(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(1) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(1) input')
-    await PuppUtils.typeText(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(1) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(1) input', "4.99")
+    await typeLikeHuman(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(1) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(1) input', "4.99")
     await PuppUtils.click(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(1) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(2) input')
-    await PuppUtils.typeText(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(1) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(2) input', "1.99")
+    await typeLikeHuman(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(1) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(2) input', "1.99")
 
     await page.waitForTimeout(SLOW_MO)
     element = await page.evaluateHandle(() => {
@@ -1017,16 +1016,16 @@ async function createNewListing(page, info) {
     await page.waitForTimeout(SLOW_MO)
 
     await PuppUtils.click(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(2) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(1) input')
-    await PuppUtils.typeText(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(2) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(1) input', "9.99")
+    await typeLikeHuman(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(2) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(1) input', "9.99")
     await PuppUtils.click(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(2) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(2) input')
-    await PuppUtils.typeText(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(2) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(2) input', "2.99")
+    await typeLikeHuman(page, '.wt-text-body-01.wt-grid__item-xs-12 > div:nth-child(2) >div:nth-child(2)>div:nth-child(2)>div:nth-child(2) >div >div:nth-child(2) input', "2.99")
     await page.waitForTimeout(SLOW_MO)
 
     await PuppUtils.click(page, '[data-region="shipping-profiles"] button.wt-btn--outline')
     await page.waitForTimeout(2000)
     await PuppUtils.click(page, '[data-reactroot].wt-overlay--will-animate button.wt-btn.wt-btn--filled')
     await page.waitForTimeout(SLOW_MO)
-    await PuppUtils.typeText(page, 'input[placeholder="Name of the profile"]', "MUG CC")
+    await typeLikeHuman(page, 'input[placeholder="Name of the profile"]', "MUG CC")
 
     await PuppUtils.click(page, '[aria-label="Overlay to save an unshared profile"] button.wt-btn--filled')
     await page.waitForTimeout(3000)
@@ -1065,10 +1064,10 @@ async function submitBussinessInfo(page, info) {
 
     await page.waitForTimeout(SLOW_MO)
     if (!await PuppUtils.isElementVisbile(page, '[data-ui="bank_account_legal_name"]')) {
-        await PuppUtils.typeText(page, "#bank-name-on-account", capitalizeLetter(info.firstName) + " " + capitalizeLetter(info.middleName) + " " + capitalizeLetter(info.lastName))
+        await typeLikeHuman(page, "#bank-name-on-account", capitalizeLetter(info.firstName) + " " + capitalizeLetter(info.middleName) + " " + capitalizeLetter(info.lastName))
     }
-    await PuppUtils.typeText(page, "#bank-routing-number", getRoutingNumber(info))
-    await PuppUtils.typeText(page, "#bank-account-number", info.accountNumber)
+    await typeLikeHuman(page, "#bank-routing-number", getRoutingNumber(info))
+    await typeLikeHuman(page, "#bank-account-number", info.accountNumber)
 
     await page.evaluate(() => {
         element = document.querySelector('#identity-country-id');
@@ -1090,8 +1089,8 @@ async function submitBussinessInfo(page, info) {
     await element.click()
 
     await page.waitForTimeout(SLOW_MO)
-    await PuppUtils.typeText(page, "#identity-first-name", capitalizeLetter(info.firstName))
-    await PuppUtils.typeText(page, "#identity-last-name", capitalizeLetter(info.lastName))
+    await typeLikeHuman(page, "#identity-first-name", capitalizeLetter(info.firstName))
+    await typeLikeHuman(page, "#identity-last-name", capitalizeLetter(info.lastName))
     //dob month
     await page.waitForTimeout(SLOW_MO)
     element = await page.$('#dob-container-month')
@@ -1121,9 +1120,9 @@ async function submitBussinessInfo(page, info) {
     await element.click()
     await page.waitForTimeout(SLOW_MO)
 
-    await PuppUtils.typeText(page, 'input[name="street_number"]', getAddress(0, info))
-    await PuppUtils.typeText(page, 'input[name="street_name"]', getAddress(1, info))
-    await PuppUtils.typeText(page, '.address-container input[name="city"]', info.city)
+    await typeLikeHuman(page, 'input[name="street_number"]', getAddress(0, info))
+    await typeLikeHuman(page, 'input[name="street_name"]', getAddress(1, info))
+    await typeLikeHuman(page, '.address-container input[name="city"]', info.city)
     //dob state
     await page.waitForTimeout(SLOW_MO)
     element = await page.$('.address-container [name="state"]')
@@ -1135,8 +1134,8 @@ async function submitBussinessInfo(page, info) {
     await element.click()
     await page.waitForTimeout(SLOW_MO)
 
-    await PuppUtils.typeText(page, '.address-container input[name="zip"]', info.zip)
-    await PuppUtils.typeText(page, '.address-container input[name="phone"]', info.phone)
+    await typeLikeHuman(page, '.address-container input[name="zip"]', info.zip)
+    await typeLikeHuman(page, '.address-container input[name="phone"]', info.phone)
     await moveTheMouse()
     await PuppUtils.click(page, 'button[data-ui="dc-submit"]')
 }
@@ -1187,4 +1186,13 @@ function saveProduct() {
 
 async function confirmRecoveryOption(page) {
     await PuppUtils.click(page, '[role="presentation"]>div>div>div:nth-child(2)>div:nth-child(3)>div>div:nth-child(2) [role="button"]')
+}
+
+async function typeLikeHuman(page, selector, string) {
+    let strSplit = string.split('')
+    let delay = 0
+    for (let i = 0; i < strSplit.length; i++) {
+        delay = Math.random() * 1000
+        await PuppUtils.typeText(page, selector, strSplit, delay)
+    }
 }
